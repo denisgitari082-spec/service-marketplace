@@ -1,0 +1,93 @@
+/* Container */
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 0 20px;
+  font-family: Arial, sans-serif;
+}
+
+/* Header */
+h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #1e40af; /* dark blue */
+}
+
+/* Add Service button */
+.add-btn {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px 16px;
+  background-color: #1e40af;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.add-btn:hover {
+  background-color: #1d4ed8;
+}
+
+/* Service cards */
+.service-card {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 16px;
+  background-color: white;
+  margin-bottom: 16px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+}
+
+.service-card h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+  color: #1e40af;
+}
+
+.service-card p {
+  margin: 6px 0;
+  color: #333;
+}
+
+.service-card .button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.button-group a {
+  text-decoration: none;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.button-group .whatsapp {
+  background-color: #16a34a;
+}
+
+.button-group .whatsapp:hover {
+  background-color: #15803d;
+}
+
+.button-group .call {
+  background-color: #2563eb;
+}
+
+.button-group .call:hover {
+  background-color: #1d4ed8;
+}
