@@ -133,6 +133,7 @@ export default function Services() {
     "transport",
     "it",
     "construction",
+    "graphic design",
   ];
 
   const groupedServices: { [key: string]: Service[] } = {};
