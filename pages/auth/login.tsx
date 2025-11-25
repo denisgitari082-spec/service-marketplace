@@ -57,9 +57,15 @@ export default function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
         <p className="register">
           Don’t have an account?{" "}
           <span onClick={() => router.push("/auth/register")}>Register</span>
+        </p>
+
+        {/* About Us link */}
+        <p className="about">
+          <span onClick={() => router.push("/about")}>About Us</span>
         </p>
       </div>
 
@@ -134,6 +140,18 @@ export default function Login() {
           cursor: pointer;
         }
         .register span:hover {
+          text-decoration: underline;
+        }
+        .about {
+          margin-top: 10px;
+          font-size: 14px;
+        }
+        .about span {
+          color: #2563eb;
+          cursor: pointer;
+          font-weight: bold;
+        }
+        .about span:hover {
           text-decoration: underline;
         }
       `}</style>

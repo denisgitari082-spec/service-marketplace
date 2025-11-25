@@ -17,19 +17,15 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // 1️⃣ Create user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
       if (error) throw error;
 
-      // 2️⃣ Insert additional user info into profiles table
       const { error: insertError } = await supabase
         .from("profiles")
-        .insert([
-          { id: data.user?.id, full_name: fullName, email, category },
-        ]);
+        .insert([{ id: data.user?.id, full_name: fullName, email, category }]);
       if (insertError) throw insertError;
 
       alert("Registration successful! Please check your email for verification.");
@@ -83,9 +79,13 @@ export default function Register() {
             {loading ? "Registering..." : "Register"}
           </button>
 
+          {/* Links */}
           <p className="login-link">
             Already have an account?{" "}
             <span onClick={() => router.push("/auth/login")}>Login</span>
+          </p>
+          <p className="about-link">
+            <span onClick={() => router.push("/about")}>About Us</span>
           </p>
         </form>
       </div>
@@ -123,7 +123,8 @@ export default function Register() {
           flex-direction: column;
           gap: 15px;
         }
-        input, select {
+        input,
+        select {
           padding: 12px 15px;
           border-radius: 10px;
           border: 1px solid #ccc;
@@ -131,7 +132,8 @@ export default function Register() {
           outline: none;
           transition: border 0.2s, box-shadow 0.2s;
         }
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
           border-color: #2563eb;
           box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
         }
@@ -161,6 +163,18 @@ export default function Register() {
           cursor: pointer;
         }
         .login-link span:hover {
+          text-decoration: underline;
+        }
+        .about-link {
+          margin-top: 10px;
+          font-size: 14px;
+        }
+        .about-link span {
+          color: #2563eb;
+          font-weight: bold;
+          cursor: pointer;
+        }
+        .about-link span:hover {
           text-decoration: underline;
         }
       `}</style>
