@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "../../src/lib/supabaseClient";
+import { supabase } from "../src/lib/supabaseClient";
 
 // --- Types ---
 type Service = {
@@ -155,4 +155,5 @@ export default function Home() {
     </div>
   );
 }
+
 
