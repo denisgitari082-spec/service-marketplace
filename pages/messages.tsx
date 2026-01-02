@@ -30,10 +30,10 @@ export default function MessagesPage() {
     return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // 1. App Initialization - FIXED FETCH LOGIC
   useEffect(() => {
     const initApp = async () => {
       setLoading(true);
+      console.log("Checking session...");
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
@@ -44,31 +44,31 @@ export default function MessagesPage() {
       
       setCurrentUser(user);
 
-      // 1. Ensure current user has a profile
+      // 1. Sync YOUR profile first
+      const myName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
       const { error: upsertError } = await supabase.from("profiles").upsert({ 
         id: user.id, 
         email: user.email,
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+        full_name: myName,
         category: 'Professional'
       });
-      if (upsertError) console.error("Profile Upsert Error:", upsertError);
 
-      // 2. Fetch ALL users (Check if RLS is blocking this)
+      if (upsertError) console.error("Profile sync failed:", upsertError);
+
+      // 2. Fetch OTHERS (Explicitly selecting full_name)
       const { data: users, error: userError } = await supabase
         .from("profiles")
-        .select("*")
-        .neq("id", user.id); // Hide self
+        .select("id, email, full_name, category")
+        .neq("id", user.id); 
 
       if (userError) {
-        console.error("User Fetch Error (Check RLS Policies):", userError);
+        console.error("Critical User Fetch Error:", userError.message);
       } else {
-        console.log("Users found:", users?.length);
+        console.log("Profiles loaded:", users); // Watch this in F12
         setSuggestedUsers(users || []);
       }
 
-      // 3. Fetch Groups
-      const { data: groups, error: groupError } = await supabase.from("groups").select("*");
-      if (groupError) console.error("Group Fetch Error:", groupError);
+      const { data: groups } = await supabase.from("groups").select("*");
       setSuggestedGroups(groups || []);
 
       setLoading(false);
@@ -76,17 +76,7 @@ export default function MessagesPage() {
     initApp();
   }, []);
 
-  // 2. Mark Messages as Read
-  const markAsRead = async (targetId: string) => {
-    if (!currentUser) return;
-    await supabase.from("messages")
-      .update({ is_read: true })
-      .eq("sender_id", targetId)
-      .eq("receiver_id", currentUser.id)
-      .eq("is_read", false);
-  };
-
-  // 3. Chat Logic & Realtime
+  // Real-time & Chat Logic
   useEffect(() => {
     if (!selectedTarget || !currentUser?.id) return;
 
@@ -94,12 +84,16 @@ export default function MessagesPage() {
       let query = supabase.from("messages").select("*").order("created_at", { ascending: true });
       if ("email" in selectedTarget) {
         query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedTarget.id}),and(sender_id.eq.${selectedTarget.id},receiver_id.eq.${currentUser.id})`);
-        markAsRead(selectedTarget.id);
       } else {
         query = query.eq("group_id", selectedTarget.id);
       }
       const { data } = await query;
       setMessages(data || []);
+      
+      if ("email" in selectedTarget) {
+         await supabase.from("messages").update({ is_read: true })
+          .eq("sender_id", selectedTarget.id).eq("receiver_id", currentUser.id).eq("is_read", false);
+      }
     };
 
     fetchMessages();
@@ -115,10 +109,7 @@ export default function MessagesPage() {
           const isMatch = m.group_id === selectedTarget.id || 
                          (m.sender_id === selectedTarget.id && m.receiver_id === currentUser.id) || 
                          (m.sender_id === currentUser.id && m.receiver_id === selectedTarget.id);
-          if (isMatch) {
-            setMessages(prev => [...prev, m]);
-            if (m.sender_id === selectedTarget.id) markAsRead(selectedTarget.id);
-          }
+          if (isMatch) setMessages(prev => [...prev, m]);
         } 
         if (payload.eventType === 'UPDATE') {
           const updatedMsg = payload.new as Message;
@@ -131,37 +122,20 @@ export default function MessagesPage() {
         setIsOtherTyping(typingUsers.length > 0);
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ user_id: currentUser.id, isTyping: false });
-        }
+        if (status === 'SUBSCRIBED') await channel.track({ user_id: currentUser.id, isTyping: false });
       });
 
     return () => { supabase.removeChannel(channel); };
   }, [selectedTarget, currentUser?.id]);
 
-  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isOtherTyping]);
-
   const handleTyping = () => {
     if (!selectedTarget) return;
     const channel = supabase.channel(`chat-${selectedTarget.id}`);
     channel.track({ user_id: currentUser.id, isTyping: true });
-
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       channel.track({ user_id: currentUser.id, isTyping: false });
     }, 2000);
-  };
-
-  const handleCreateGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!groupName.trim() || !currentUser?.id) return;
-    const { data, error } = await supabase.from("groups").insert([{ name: groupName, description: groupDesc, created_by: currentUser.id }]).select().single();
-    if (!error) {
-      setSuggestedGroups(prev => [data, ...prev]);
-      setShowCreateGroup(false);
-      setGroupName("");
-      setSelectedTarget(data);
-    }
   };
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -169,7 +143,7 @@ export default function MessagesPage() {
     if (!newMessage.trim() || !selectedTarget) return;
 
     const isGroup = !("email" in selectedTarget);
-    const { error } = await supabase.from("messages").insert([{
+    await supabase.from("messages").insert([{
       text: newMessage,
       sender_id: currentUser.id,
       receiver_id: isGroup ? null : selectedTarget.id,
@@ -177,13 +151,11 @@ export default function MessagesPage() {
       is_read: false
     }]);
 
-    if (!error) {
-      setNewMessage("");
-      supabase.channel(`chat-${selectedTarget.id}`).track({ user_id: currentUser.id, isTyping: false });
-    }
+    setNewMessage("");
+    supabase.channel(`chat-${selectedTarget.id}`).track({ user_id: currentUser.id, isTyping: false });
   };
 
-  if (loading) return <div className="loading">Initializing Secure Chat...</div>;
+  if (loading) return <div className="loading">Checking users...</div>;
 
   return (
     <div className="container">
@@ -193,22 +165,25 @@ export default function MessagesPage() {
           <button className={view === "discover" ? "active" : ""} onClick={() => setView("discover")}>Explore</button>
         </div>
         <div className="list-content">
-          <p className="section-title">{view === "chats" ? "DIRECT MESSAGES" : "PUBLIC GROUPS"}</p>
+          <p className="section-title">{view === "chats" ? "ACTIVE PROS" : "GROUPS"}</p>
+          
+          {view === "chats" && suggestedUsers.length === 0 && (
+            <div className="empty-notice">No other users have joined yet.</div>
+          )}
+
           {view === "chats" ? (
-            suggestedUsers.length > 0 ? (
-              suggestedUsers.map(u => (
-                <div key={u.id} className={`row ${selectedTarget?.id === u.id ? 'active' : ''}`} onClick={() => setSelectedTarget(u)}>
-                  <div className="avatar">{u.full_name?.[0] || "?"}</div>
-                  <div className="details">
-                    <div className="name">{u.full_name || "Unknown User"}</div>
-                    <div className="meta">{u.category || "Professional"}</div>
-                  </div>
+            suggestedUsers.map(u => (
+              <div key={u.id} className={`row ${selectedTarget?.id === u.id ? 'active' : ''}`} onClick={() => setSelectedTarget(u)}>
+                <div className="avatar">{u.full_name?.[0] || u.email?.[0] || "?"}</div>
+                <div className="details">
+                  <div className="name">{u.full_name}</div>
+                  <div className="meta">{u.category}</div>
                 </div>
-              ))
-            ) : <p className="empty-label">No other users found</p>
+              </div>
+            ))
           ) : (
             <div className="explore">
-              <button className="create-btn" onClick={() => setShowCreateGroup(true)}>+ New Community</button>
+              <button className="create-btn" onClick={() => setShowCreateGroup(true)}>+ Create Group</button>
               {suggestedGroups.map(g => (
                 <div key={g.id} className={`row ${selectedTarget?.id === g.id ? 'active' : ''}`} onClick={() => setSelectedTarget(g)}>
                    <div className="avatar group">#</div>
@@ -223,9 +198,7 @@ export default function MessagesPage() {
       <div className="chat-window">
         {selectedTarget ? (
           <>
-            <div className="header">
-              {"email" in selectedTarget ? selectedTarget.full_name : selectedTarget.name}
-            </div>
+            <div className="header">{"full_name" in selectedTarget ? selectedTarget.full_name : selectedTarget.name}</div>
             <div className="messages">
               {messages.map((m) => (
                 <div key={m.id} className={`bubble-wrapper ${m.sender_id === currentUser.id ? 'sent-wrapper' : 'received-wrapper'}`}>
@@ -233,34 +206,30 @@ export default function MessagesPage() {
                     <div className="text">{m.text}</div>
                     <div className="footer">
                       <span className="time">{formatTime(m.created_at)}</span>
-                      {m.sender_id === currentUser.id && (
-                        <span className="status">{m.is_read ? " • Seen" : " • Delivered"}</span>
-                      )}
+                      {m.sender_id === currentUser.id && <span className="status">{m.is_read ? " • Seen" : " • Delivered"}</span>}
                     </div>
                   </div>
                 </div>
               ))}
-              {isOtherTyping && (
-                <div className="typing-indicator">
-                  <span></span><span></span><span></span>
-                </div>
-              )}
+              {isOtherTyping && <div className="typing-indicator"><span></span><span></span><span></span></div>}
               <div ref={scrollRef} />
             </div>
             <form className="input-box" onSubmit={sendMessage}>
-              <input value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} placeholder="Write a message..." />
+              <input value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} placeholder="Type here..." />
               <button type="submit">SEND</button>
             </form>
           </>
-        ) : (
-          <div className="empty">Select a conversation to start messaging</div>
-        )}
+        ) : <div className="empty">Select someone to chat</div>}
       </div>
 
       {showCreateGroup && (
         <div className="modal-bg">
-          <form className="modal" onSubmit={handleCreateGroup}>
-            <h3>Create Group</h3>
+          <form className="modal" onSubmit={async (e) => {
+              e.preventDefault();
+              const { data, error } = await supabase.from("groups").insert([{ name: groupName, description: groupDesc, created_by: currentUser.id }]).select().single();
+              if (!error) { setSuggestedGroups([data, ...suggestedGroups]); setShowCreateGroup(false); setGroupName(""); }
+            }}>
+            <h3>New Group</h3>
             <input placeholder="Name" value={groupName} onChange={e => setGroupName(e.target.value)} required />
             <textarea placeholder="Description" value={groupDesc} onChange={e => setGroupDesc(e.target.value)} />
             <div className="modal-btns">
@@ -272,44 +241,42 @@ export default function MessagesPage() {
       )}
 
       <style jsx>{`
-        .container { display: flex; height: 100vh; background: #0f172a; color: white; font-family: 'Inter', system-ui, sans-serif; }
-        .sidebar { width: 320px; border-right: 1px solid #1e293b; background: #020617; display: flex; flex-direction: column; }
+        .container { display: flex; height: 100vh; background: #0f172a; color: white; font-family: sans-serif; }
+        .sidebar { width: 300px; border-right: 1px solid #1e293b; background: #020617; display: flex; flex-direction: column; }
         .tabs { display: flex; border-bottom: 1px solid #1e293b; }
-        .tabs button { flex: 1; padding: 18px; background: none; border: none; color: #64748b; cursor: pointer; font-weight: bold; }
-        .tabs button.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; background: #0f172a; }
+        .tabs button { flex: 1; padding: 15px; background: none; border: none; color: #64748b; cursor: pointer; font-weight: bold; }
+        .tabs button.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
         .list-content { flex: 1; overflow-y: auto; padding: 15px; }
-        .section-title { font-size: 11px; color: #475569; margin: 10px 0 15px; letter-spacing: 1px; font-weight: bold; }
-        .empty-label { font-size: 12px; color: #475569; text-align: center; margin-top: 20px; }
-        .row { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; margin-bottom: 4px; transition: 0.2s; }
-        .row:hover { background: #1e293b; }
+        .section-title { font-size: 11px; color: #475569; margin-bottom: 15px; font-weight: bold; }
+        .empty-notice { padding: 20px; text-align: center; color: #475569; font-size: 13px; border: 1px dashed #1e293b; border-radius: 8px; }
+        .row { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; cursor: pointer; margin-bottom: 5px; }
         .row.active { background: #2563eb; }
-        .avatar { width: 42px; height: 42px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .avatar { width: 38px; height: 38px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .avatar.group { background: #10b981; }
         .name { font-size: 14px; font-weight: 600; }
-        .meta { font-size: 12px; opacity: 0.6; }
-        .create-btn { width: 100%; padding: 12px; background: #3b82f6; border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
-        .chat-window { flex: 1; display: flex; flex-direction: column; background: #0f172a; }
-        .header { padding: 20px 25px; border-bottom: 1px solid #1e293b; font-weight: bold; background: #020617; font-size: 17px; }
-        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        .meta { font-size: 11px; opacity: 0.6; }
+        .chat-window { flex: 1; display: flex; flex-direction: column; }
+        .header { padding: 18px; border-bottom: 1px solid #1e293b; font-weight: bold; background: #020617; }
+        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
         .bubble-wrapper { display: flex; width: 100%; }
         .sent-wrapper { justify-content: flex-end; }
         .received-wrapper { justify-content: flex-start; }
-        .bubble { max-width: 65%; padding: 10px 15px; border-radius: 18px; position: relative; }
-        .sent { background: #2563eb; border-bottom-right-radius: 4px; }
-        .received { background: #1e293b; border-bottom-left-radius: 4px; border: 1px solid #334155; }
-        .footer { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 4px; font-size: 10px; opacity: 0.7; }
-        .status { color: #93c5fd; font-weight: bold; }
-        .input-box { padding: 20px; display: flex; gap: 12px; background: #020617; border-top: 1px solid #1e293b; }
-        .input-box input { flex: 1; padding: 14px 22px; background: #1e293b; border: 1px solid #334155; color: white; border-radius: 30px; outline: none; }
-        .input-box button { background: #3b82f6; border: none; color: white; padding: 0 25px; border-radius: 30px; cursor: pointer; font-weight: bold; }
-        .typing-indicator { display: flex; gap: 4px; padding: 10px 15px; background: #1e293b; border-radius: 15px; width: fit-content; margin-bottom: 10px; }
-        .typing-indicator span { width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out; }
+        .bubble { max-width: 65%; padding: 10px 14px; border-radius: 15px; }
+        .sent { background: #2563eb; }
+        .received { background: #1e293b; border: 1px solid #334155; }
+        .footer { display: flex; justify-content: flex-end; font-size: 10px; opacity: 0.7; margin-top: 4px; }
+        .status { color: #93c5fd; }
+        .input-box { padding: 20px; display: flex; gap: 10px; background: #020617; border-top: 1px solid #1e293b; }
+        .input-box input { flex: 1; padding: 12px 18px; background: #1e293b; border: none; color: white; border-radius: 20px; outline: none; }
+        .input-box button { background: #3b82f6; border: none; color: white; padding: 0 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        .typing-indicator { display: flex; gap: 3px; padding: 8px 12px; background: #1e293b; border-radius: 12px; width: fit-content; margin-bottom: 10px; }
+        .typing-indicator span { width: 5px; height: 5px; background: #3b82f6; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal { background: #1e293b; padding: 30px; border-radius: 16px; width: 380px; display: flex; flex-direction: column; gap: 15px; }
-        .modal input, .modal textarea { padding: 12px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; }
-        .confirm-btn { background: #3b82f6; border: none; padding: 12px; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .loading, .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 16px; }
+        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .modal { background: #1e293b; padding: 25px; border-radius: 15px; width: 350px; display: flex; flex-direction: column; gap: 12px; }
+        .modal input, .modal textarea { padding: 10px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; }
+        .confirm-btn { background: #3b82f6; border: none; padding: 10px; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .loading, .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; }
       `}</style>
     </div>
   );
