@@ -1,320 +1,849 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "../src/lib/supabaseClient";
 
-type Message = { 
-  id: string; 
-  sender_id?: string; 
-  receiver_id?: string; 
-  group_id?: string; 
-  text: string; 
-  created_at: string; 
-  is_read: boolean; 
+type Message = {
+  id: string;
+  sender_id?: string;
+  receiver_id?: string;
+  group_id?: string;
+  text: string;
+  file_url?: string;
+  created_at: string;
+  is_read: boolean;
 };
 
-type ChatUser = { id: string; email: string; full_name: string; category: string };
+type ChatUser = {
+  id: string;
+  email: string;
+  full_name: string;
+  unread_count?: number;
+  last_message_at?: string;
+};
+
 type Group = { id: string; name: string; description: string };
 
 export default function MessagesPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [view, setView] = useState<"chats" | "discover">("chats");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [chats, setChats] = useState<ChatUser[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<ChatUser[]>([]);
   const [suggestedGroups, setSuggestedGroups] = useState<Group[]>([]);
   const [selectedTarget, setSelectedTarget] = useState<ChatUser | Group | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  // Group Create States
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [groupDesc, setGroupDesc] = useState("");
+  // --- NEW FEATURES STATE ---
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [sidebarMenuOpenId, setSidebarMenuOpenId] = useState<string | null>(null);
 
+  // --- PRESENCE STATE ---
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const selectedTargetRef = useRef<ChatUser | Group | null>(null);
+  const [showScrollArrow, setShowScrollArrow] = useState(false);
+const messageListRef = useRef<HTMLDivElement>(null); // To track the scrollable container
 
-  // Helper: Format Time
-  const formatTime = (dateStr: string) => {
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+// Inside MessagesPage component
+const [incomingCall, setIncomingCall] = useState<any>(null);
 
-  // 1. App Initialization
-  useEffect(() => {
-    const initApp = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+useEffect(() => {
+  if (!currentUser) return;
+
+  const personalChannel = supabase.channel(`inbox:${currentUser.id}`)
+    .on('broadcast', { event: 'incoming-call' }, ({ payload }) => {
+      // Show the Accept/Decline UI
+      setIncomingCall(payload);
       
-      setCurrentUser(user);
+      // Optional: Play a ringtone sound here
+      const audio = new Audio('/ringtone.mp3');
+      audio.play();
+    })
+    .subscribe();
 
-      // Upsert profile
-      await supabase.from("profiles").upsert({ 
-        id: user.id, 
-        email: user.email,
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-        category: 'Professional'
+  return () => { supabase.removeChannel(personalChannel); };
+}, [currentUser]);
+
+const handleAcceptCall = () => {
+  window.open(
+    `/call?type=${incomingCall.type}&targetId=${incomingCall.callerId}&role=receiver`,
+    "_blank",
+    "width=1000,height=700"
+  );
+  setIncomingCall(null);
+};
+
+
+const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+  const target = e.currentTarget;
+  // Calculate how far we are from the bottom
+  const distanceToBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
+  
+  // Show arrow if we are more than 300px away from the bottom
+  setShowScrollArrow(distanceToBottom > 300);
+};
+
+const handleDeclineCall = async () => {
+  if (!incomingCall || !currentUser) return;
+
+  const text = `📞 Missed ${incomingCall.type} call`;
+
+  await supabase.from("messages").insert([{
+    sender_id: incomingCall.callerId,
+    receiver_id: currentUser.id,
+    text: text,
+    is_read: false
+  }]);
+
+  setIncomingCall(null);
+  
+  // Refresh UI
+  fetchChatHistory(currentUser.id);
+  
+  // If we are currently in that chat, add it to the message list locally
+  if (selectedTarget?.id === incomingCall.callerId) {
+     // This adds it to the screen instantly
+     const tempMsg: Message = {
+        id: `missed-${Date.now()}`,
+        text: text,
+        sender_id: incomingCall.callerId,
+        created_at: new Date().toISOString(),
+        is_read: false,
+        receiver_id: currentUser.id
+     };
+     setMessages(prev => [...prev, tempMsg]);
+  }
+
+};
+const startCall = async (type: "video" | "voice") => {
+  if (!selectedTarget || !currentUser) return;
+
+  // 1. Notify the target user that you are calling them
+  const callChannel = supabase.channel(`inbox:${selectedTarget.id}`);
+  await callChannel.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await callChannel.send({
+        type: 'broadcast',
+        event: 'incoming-call',
+        payload: {
+          callerId: currentUser.id,
+          callerName: currentUser.user_metadata?.full_name || currentUser.email,
+          type: type
+        }
       });
+    }
+  });
 
-      const { data: users } = await supabase.from("profiles").select("*").neq("id", user.id);
-      const { data: groups } = await supabase.from("groups").select("*");
-      
-      setSuggestedUsers(users || []);
-      setSuggestedGroups(groups || []);
-      setLoading(false);
+  // 2. Open your own call window as the 'caller'
+  window.open(
+    `/call?type=${type}&targetId=${selectedTarget.id}&role=caller`,
+    "_blank",
+    "width=1000,height=700"
+  );
+};
+
+const scrollToBottom = () => {
+  scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+};
+
+  useEffect(() => {
+    selectedTargetRef.current = selectedTarget;
+  }, [selectedTarget]);
+
+useEffect(() => {
+  if (!currentUser) return;
+
+  const personalChannel = supabase.channel(`inbox:${currentUser.id}`)
+    .on('broadcast', { event: 'incoming-call' }, ({ payload }) => {
+      setIncomingCall(payload);
+      new Audio('/ringtone.mp3').play().catch(() => {});
+    })
+    .on('broadcast', { event: 'call-cancelled' }, async ({ payload }) => {
+       setIncomingCall(null);
+       
+       // 1. Insert the missed call record
+       const missedCallMsg = {
+          sender_id: payload.callerId === "system" ? currentUser.id : payload.callerId, 
+          receiver_id: currentUser.id,
+          text: `📞 Missed ${payload.type} call`,
+          is_read: false
+       };
+
+       await supabase.from("messages").insert([missedCallMsg]);
+
+       // 2. Refresh Sidebar so the badge/last message updates
+       fetchChatHistory(currentUser.id);
+
+       // 3. Refresh Messages IF the user is currently looking at the caller's chat
+       if (selectedTargetRef.current && selectedTargetRef.current.id === payload.callerId) {
+          // Trigger a re-fetch of messages for the active window
+          const { data } = await supabase.from("messages")
+            .select("*")
+            .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${payload.callerId}),and(sender_id.eq.${payload.callerId},receiver_id.eq.${currentUser.id})`)
+            .order("created_at", { ascending: true });
+          
+          if (data) setMessages(data);
+       }
+    })
+    .subscribe();
+
+  return () => { supabase.removeChannel(personalChannel); };
+}, [currentUser]);
+  // 1. Initial Load + Presence Tracking
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUser(user);
+        const { data: uData } = await supabase.from("profiles").select("id, email, full_name").neq("id", user.id);
+        const { data: gData } = await supabase.from("groups").select("*");
+        setSuggestedUsers(uData || []);
+        setSuggestedGroups(gData || []);
+        fetchChatHistory(user.id);
+
+        const presenceChannel = supabase.channel('online-presence', {
+          config: { presence: { key: user.id } }
+        });
+
+        presenceChannel
+          .on('presence', { event: 'sync' }, () => {
+            const newState = presenceChannel.presenceState();
+            setOnlineUsers(Object.keys(newState));
+          })
+          .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              await presenceChannel.track({ online_at: new Date().toISOString() });
+            }
+          });
+      }
     };
-    initApp();
+    init();
   }, []);
 
-  // 2. Mark Messages as Read
-  const markAsRead = async (targetId: string) => {
+// 2. FETCH INBOX (Optimized via RPC)
+const fetchChatHistory = async (userId: string) => {
+  try {
+    // Call the SQL function we created in the Supabase Editor
+    const { data, error } = await supabase.rpc('get_my_chats', { user_id: userId });
+
+    if (error) throw error;
+
+    if (data) {
+      // Map the data to match your ChatUser type and handle local active state
+      const enrichedChats: ChatUser[] = data.map((chat: any) => {
+        const isCurrentlyOpen = selectedTargetRef.current?.id === chat.id;
+
+        return {
+          id: chat.id,
+          full_name: chat.full_name,
+          email: chat.email,
+          // If the chat is currently open, show 0 unread to the user immediately
+          unread_count: isCurrentlyOpen ? 0 : Number(chat.unread_count),
+          last_message_at: chat.last_message_at
+        };
+      });
+
+      // We don't need to sort here because the SQL function 
+      // already handles "order by unread_count desc, last_message_at desc"
+      setChats(enrichedChats);
+    }
+  } catch (err) {
+    console.error("Error fetching chat history:", err);
+  }
+};
+  // 3. GLOBAL INBOX LISTENER
+  useEffect(() => {
     if (!currentUser) return;
-    await supabase.from("messages")
+
+    const globalChannel = supabase.channel('global-inbox-updates')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
+        const newMsg = payload.new as Message;
+        if (newMsg.sender_id === currentUser.id) return;
+
+        if (newMsg.receiver_id === currentUser.id) {
+          const isActive = selectedTargetRef.current && newMsg.sender_id === selectedTargetRef.current.id;
+          if (isActive) {
+            supabase.from("messages").update({ is_read: true }).eq("id", newMsg.id);
+            fetchChatHistory(currentUser.id);
+          } else {
+            fetchChatHistory(currentUser.id);
+          }
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(globalChannel); };
+  }, [currentUser]);
+
+  // 4. CHAT WINDOW LISTENER
+  useEffect(() => {
+    if (!selectedTarget || !currentUser) return;
+
+const loadMsgs = async () => {
+    if (!selectedTarget || !currentUser) return;
+
+    // 1. Instant UI Feedback: Clear the badge locally so it feels fast
+    setChats(prev => prev.map(chat =>
+      chat.id === selectedTarget.id ? { ...chat, unread_count: 0 } : chat
+    ));
+
+    try {
+      let query = supabase.from("messages").select("*").order("created_at", { ascending: true });
+
+      if ("email" in selectedTarget) {
+        // 2. IMPORTANT: Await the update so the DB is actually updated 
+        // before we try to fetch the new history counts.
+        await supabase
+          .from("messages")
+          .update({ is_read: true })
+          .match({
+            sender_id: selectedTarget.id,
+            receiver_id: currentUser.id,
+            is_read: false
+          });
+
+        // 3. Update the sidebar history NOW that the DB is confirmed read
+        fetchChatHistory(currentUser.id);
+
+        query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedTarget.id}),and(sender_id.eq.${selectedTarget.id},receiver_id.eq.${currentUser.id})`);
+      } else {
+        query = query.eq("group_id", selectedTarget.id);
+      }
+
+      // 4. Load the messages for the chat window
+      const { data, error } = await query;
+      if (!error) {
+        setMessages(data || []);
+      }
+    } catch (err) {
+      console.error("Error loading messages:", err);
+    }
+  };
+    
+    loadMsgs();
+
+    const chatChannel = supabase.channel(`chat-${selectedTarget.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const m = payload.new as Message;
+          const isTargetMsg = m.group_id === selectedTarget.id || m.receiver_id === currentUser.id || m.sender_id === currentUser.id;
+
+          if (isTargetMsg) {
+            setMessages(prev => {
+              if (prev.some(msg => msg.id === m.id)) return prev;
+              const optimisticIdx = prev.findIndex(msg =>
+                msg.id.toString().startsWith('temp-') &&
+                msg.text === m.text &&
+                msg.sender_id === m.sender_id
+              );
+              if (optimisticIdx !== -1) {
+                const updatedList = [...prev];
+                updatedList[optimisticIdx] = m;
+                return updatedList;
+              }
+              return [...prev, m];
+            });
+          }
+        }
+        if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as Message;
+          setMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
+        }
+        if (payload.eventType === 'DELETE') {
+          setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(chatChannel); };
+  }, [selectedTarget, currentUser]);
+
+  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const filteredItems = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    const source = view === "chats" ? chats : suggestedUsers;
+    return source.filter(u => (u.full_name || u.email).toLowerCase().includes(query));
+  }, [searchQuery, view, chats, suggestedUsers]);
+
+  // --- HANDLERS ---
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) alert("Error deleting message");
+    setMenuOpenId(null);
+  };
+
+  const handleMarkAsRead = async (targetId: string) => {
+    if (!currentUser) return;
+    setChats(prev => prev.map(chat =>
+      chat.id === targetId ? { ...chat, unread_count: 0 } : chat
+    ));
+
+    const { error } = await supabase
+      .from("messages")
       .update({ is_read: true })
       .eq("sender_id", targetId)
       .eq("receiver_id", currentUser.id)
       .eq("is_read", false);
-  };
 
-  // 3. Chat Logic & Realtime
-  useEffect(() => {
-    if (!selectedTarget || !currentUser?.id) return;
-
-    const fetchMessages = async () => {
-      let query = supabase.from("messages").select("*").order("created_at", { ascending: true });
-      if ("email" in selectedTarget) {
-        query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedTarget.id}),and(sender_id.eq.${selectedTarget.id},receiver_id.eq.${currentUser.id})`);
-        markAsRead(selectedTarget.id);
-      } else {
-        query = query.eq("group_id", selectedTarget.id);
-      }
-      const { data } = await query;
-      setMessages(data || []);
-    };
-
-    fetchMessages();
-
-    // CHANNEL SETUP (Messages + Presence)
-    const channel = supabase.channel(`chat-${selectedTarget.id}`, {
-      config: { presence: { key: currentUser.id } }
-    });
-
-    channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          const m = payload.new as Message;
-          const isMatch = m.group_id === selectedTarget.id || 
-                         (m.sender_id === selectedTarget.id && m.receiver_id === currentUser.id) || 
-                         (m.sender_id === currentUser.id && m.receiver_id === selectedTarget.id);
-          if (isMatch) {
-            setMessages(prev => [...prev, m]);
-            if (m.sender_id === selectedTarget.id) markAsRead(selectedTarget.id);
-          }
-        } 
-        if (payload.eventType === 'UPDATE') {
-          const updatedMsg = payload.new as Message;
-          setMessages(prev => prev.map(msg => msg.id === updatedMsg.id ? updatedMsg : msg));
-        }
-      })
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const typingUsers = Object.values(state).flat().filter((p: any) => p.isTyping && p.user_id !== currentUser.id);
-        setIsOtherTyping(typingUsers.length > 0);
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ user_id: currentUser.id, isTyping: false });
-        }
-      });
-
-    return () => { supabase.removeChannel(channel); };
-  }, [selectedTarget, currentUser?.id]);
-
-  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isOtherTyping]);
-
-  // 4. Actions
-  const handleTyping = () => {
-    if (!selectedTarget) return;
-    const channel = supabase.channel(`chat-${selectedTarget.id}`);
-    channel.track({ user_id: currentUser.id, isTyping: true });
-
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => {
-      channel.track({ user_id: currentUser.id, isTyping: false });
-    }, 2000);
-  };
-
-  const handleCreateGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!groupName.trim() || !currentUser?.id) return;
-    const { data, error } = await supabase.from("groups").insert([{ name: groupName, description: groupDesc, created_by: currentUser.id }]).select().single();
     if (!error) {
-      setSuggestedGroups(prev => [data, ...prev]);
-      setShowCreateGroup(false);
-      setGroupName("");
-      setSelectedTarget(data);
+      fetchChatHistory(currentUser.id);
+      if (selectedTarget?.id === targetId) {
+        setMessages(prev => prev.map(m =>
+          (m.sender_id === targetId) ? { ...m, is_read: true } : m
+        ));
+      }
+    } else {
+      fetchChatHistory(currentUser.id);
     }
+    setSidebarMenuOpenId(null);
+  };
+
+  const handleDeleteConversation = async (targetId: string) => {
+    if (!currentUser) return;
+    const confirm = window.confirm("Are you sure? This will delete all messages in this chat.");
+    if (!confirm) return;
+
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id})`);
+
+    if (error) {
+      alert("Error deleting conversation");
+    } else {
+      fetchChatHistory(currentUser.id);
+      if (selectedTarget?.id === targetId) setSelectedTarget(null);
+    }
+    setSidebarMenuOpenId(null);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editText.trim() || !editingId) return;
+    const { error } = await supabase.from("messages").update({ text: editText }).eq("id", editingId);
+    if (error) alert("Error updating message");
+    setEditingId(null);
+    setEditText("");
   };
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedTarget) return;
+    if (!newMessage.trim() || !selectedTarget || !currentUser) return;
 
-    const isGroup = !("email" in selectedTarget);
-    const { error } = await supabase.from("messages").insert([{
+    const isGroup = "name" in selectedTarget && !("email" in selectedTarget);
+    const tempId = `temp-${Math.random().toString()}`;
+
+    const optimisticMsg: Message = {
+      id: tempId,
       text: newMessage,
       sender_id: currentUser.id,
-      receiver_id: isGroup ? null : selectedTarget.id,
-      group_id: isGroup ? selectedTarget.id : null,
-      is_read: false
+      created_at: new Date().toISOString(),
+      is_read: false,
+      receiver_id: isGroup ? undefined : selectedTarget.id,
+      group_id: isGroup ? selectedTarget.id : undefined
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setNewMessage("");
+
+    const { error } = await supabase.from("messages").insert([{
+      text: optimisticMsg.text,
+      sender_id: currentUser.id,
+      receiver_id: optimisticMsg.receiver_id || null,
+      group_id: optimisticMsg.group_id || null,
     }]);
 
-    if (!error) {
-      setNewMessage("");
-      supabase.channel(`chat-${selectedTarget.id}`).track({ user_id: currentUser.id, isTyping: false });
+    if (error) {
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      alert("Error sending message");
+    }else {
+    // ADD THIS LINE:
+    // This ensures the sidebar updates immediately after the first message is sent
+    fetchChatHistory(currentUser.id);
+  }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser || !selectedTarget) return;
+
+    const isGroup = "name" in selectedTarget && !("email" in selectedTarget);
+    const tempId = `temp-${Math.random().toString()}`;
+    const localPreview = URL.createObjectURL(file);
+
+    const optimisticMsg: Message = {
+      id: tempId,
+      text: `Sent a file: ${file.name}`,
+      file_url: localPreview,
+      sender_id: currentUser.id,
+      created_at: new Date().toISOString(),
+      is_read: false,
+      receiver_id: isGroup ? undefined : selectedTarget.id,
+      group_id: isGroup ? selectedTarget.id : undefined
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setUploading(true);
+
+    try {
+      const filePath = `${currentUser.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('chat-attachments').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('chat-attachments').getPublicUrl(filePath);
+
+      await supabase.from("messages").insert([{
+        text: `Sent a file: ${file.name}`,
+        file_url: publicUrl,
+        sender_id: currentUser.id,
+        receiver_id: optimisticMsg.receiver_id || null,
+        group_id: optimisticMsg.group_id || null
+      }]);
+    } catch (err: any) {
+      alert(err.message || "Error uploading file");
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+    } finally {
+      setUploading(false);
     }
   };
 
-  if (loading) return <div className="loading">Initializing Secure Chat...</div>;
-
   return (
-    <div className="container">
+    <div className="messenger-container" onClick={() => { setMenuOpenId(null); setSidebarMenuOpenId(null); }}>
       <div className="sidebar">
-        <div className="tabs">
-          <button className={view === "chats" ? "active" : ""} onClick={() => setView("chats")}>Inbox</button>
-          <button className={view === "discover" ? "active" : ""} onClick={() => setView("discover")}>Explore</button>
+        <div className="sidebar-header">
+          <div className="tabs">
+            <button className={view === "chats" ? "active" : ""} onClick={() => setView("chats")}>Inbox</button>
+            <button className={view === "discover" ? "active" : ""} onClick={() => setView("discover")}>Explore</button>
+          </div>
+          <div className="search-box">
+            <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
         </div>
-        <div className="list-content">
-          <p className="section-title">{view === "chats" ? "DIRECT MESSAGES" : "PUBLIC GROUPS"}</p>
-          {view === "chats" ? (
-            suggestedUsers.map(u => (
-              <div key={u.id} className={`row ${selectedTarget?.id === u.id ? 'active' : ''}`} onClick={() => setSelectedTarget(u)}>
-                <div className="avatar">{u.full_name?.[0]}</div>
-                <div className="details">
-                  <div className="name">{u.full_name}</div>
-                  <div className="meta">{u.category}</div>
+
+        <div className="sidebar-content">
+          <p className="section-label">{view === "chats" ? "Recent" : "All Users"}</p>
+          {filteredItems.map(u => {
+            const isOnline = onlineUsers.includes(u.id);
+            return (
+              <div key={u.id} className={`item ${selectedTarget?.id === u.id ? 'active' : ''}`} onClick={() => setSelectedTarget(u)
+
+
+              }>
+                <div className="avatar-wrapper">
+                  <div className="avatar">{u.full_name?.[0]?.toUpperCase() || 'U'}</div>
+                  {isOnline && <div className="online-dot" />}
+                </div>
+
+                <div className="info">
+                  <span className="name">{u.full_name || u.email.split('@')[0]}</span>
+                  {isOnline ? <span className="active-now">Active now</span> : <span className="status">Offline</span>}
+                </div>
+
+                <div className="sidebar-meta">
+                  {(u.unread_count ?? 0) > 0 && (
+                    <div className="unread-badge">{u.unread_count}</div>
+                  )}
+
+                  {view === "chats" && (
+                    <div className="sidebar-item-actions">
+                      <button className="sidebar-dots" onClick={(e) => {
+                        e.stopPropagation();
+                        setSidebarMenuOpenId(u.id === sidebarMenuOpenId ? null : u.id);
+                      }}>︙</button>
+                      {sidebarMenuOpenId === u.id && (
+                        <div className="sidebar-menu">
+                          <button onClick={(e) => { e.stopPropagation(); handleMarkAsRead(u.id); }}>
+                            Mark as Read
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteConversation(u.id); }} className="delete-btn">
+                            Delete Chat
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="explore">
-              <button className="create-btn" onClick={() => setShowCreateGroup(true)}>+ New Community</button>
-              {suggestedGroups.map(g => (
-                <div key={g.id} className={`row ${selectedTarget?.id === g.id ? 'active' : ''}`} onClick={() => setSelectedTarget(g)}>
-                   <div className="avatar group">#</div>
-                   <div className="name">{g.name}</div>
-                </div>
-              ))}
+            );
+          })}
+          {view === "discover" && suggestedGroups.map(g => (
+            <div key={g.id} className={`item ${selectedTarget?.id === g.id ? 'active' : ''}`} onClick={() => setSelectedTarget(g)}>
+              <div className="avatar grp">#</div>
+              <div className="info"><span className="name">{g.name}</span></div>
             </div>
-          )}
+          ))}
         </div>
       </div>
 
       <div className="chat-window">
         {selectedTarget ? (
           <>
-            <div className="header">
-              {"email" in selectedTarget ? selectedTarget.full_name : selectedTarget.name}
-            </div>
-            <div className="messages">
-              {messages.map((m) => (
-                <div key={m.id} className={`bubble-wrapper ${m.sender_id === currentUser.id ? 'sent-wrapper' : 'received-wrapper'}`}>
-                  <div className={`bubble ${m.sender_id === currentUser.id ? 'sent' : 'received'}`}>
-                    <div className="text">{m.text}</div>
-                    <div className="footer">
-                      <span className="time">{formatTime(m.created_at)}</span>
-                      {m.sender_id === currentUser.id && (
-                        <span className="status">{m.is_read ? " • Seen" : " • Delivered"}</span>
-                      )}
+<div className="chat-header">
+  <div className="header-left">
+    <strong>
+      {"full_name" in selectedTarget 
+        ? (selectedTarget.full_name || selectedTarget.email) 
+        : (selectedTarget as Group).name}
+    </strong>
+    {"email" in selectedTarget && onlineUsers.includes(selectedTarget.id) && (
+      <span className="header-online">● Online</span>
+    )}
+  </div>
+
+  {incomingCall && (
+  <div className="call-modal">
+    <div className="modal-content">
+      <h3>Incoming {incomingCall.type} Call</h3>
+      <p>{incomingCall.callerName} is calling you...</p>
+      <div className="modal-actions">
+        <button className="accept" onClick={handleAcceptCall}>Accept</button>
+        <button className="decline" onClick={handleDeclineCall}>Decline</button>
+      </div>
+    </div>
+  </div>
+)}
+
+  {/* NEW: Call Icons for Direct Messages */}
+  {"email" in selectedTarget && (
+    <div className="header-right">
+      <button className="call-icon-btn" title="Voice Call" onClick={() => startCall("voice")}>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+        </svg>
+      </button>
+      <button className="call-icon-btn" title="Video Call" onClick={() => startCall("video")}>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+        </svg>
+      </button>
+    </div>
+  )}
+</div>
+
+            <div className="message-list">
+              {messages.map(m => (
+                <div key={m.id} className={`msg-wrapper ${m.sender_id === currentUser?.id ? 'sent-wrap' : 'recv-wrap'}`}>
+                  <div className={`msg-bubble ${m.sender_id === currentUser?.id ? 'sent' : 'received'}`}>
+                    {m.sender_id === currentUser?.id && !m.id.toString().startsWith('temp-') && (
+                      <div className="msg-actions">
+                        <button className="dots-v" onClick={(e) => { e.stopPropagation(); setMenuOpenId(m.id === menuOpenId ? null : m.id); }}>⋮</button>
+                        {menuOpenId === m.id && (
+                          <div className="msg-menu">
+                            {/* FLOATING ARROW BUTTON */}
+  {showScrollArrow && (
+    <button className="scroll-bottom-btn" onClick={scrollToBottom}>
+      ↓
+    </button>
+  )}
+                            <button onClick={() => { setEditingId(m.id); setEditText(m.text); setMenuOpenId(null); }}>Edit</button>
+                            <button onClick={() => handleDelete(m.id)} className="delete-btn">Delete</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {m.file_url && (
+                      <div className="media-content">
+                        {m.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <img src={m.file_url} alt="Shared" className="chat-img" />
+                        ) : m.file_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                          <video src={m.file_url} controls className="chat-video" />
+                        ) : m.file_url.match(/\.(mp3|wav|m4a)$/i) ? (
+                          <audio src={m.file_url} controls className="chat-audio" />
+                        ) : (
+                          <a href={m.file_url} target="_blank" rel="noreferrer" className="file-link">📎 Download File</a>
+                        )}
+                      </div>
+                    )}
+
+                    {editingId === m.id ? (
+                      <form onSubmit={handleEdit} className="edit-form">
+                        <input value={editText} onChange={(e) => setEditText(e.target.value)} autoFocus />
+                        <div className="edit-buttons">
+                          <button type="submit">Save</button>
+                          <button type="button" onClick={() => setEditingId(null)}>Cancel</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className={`text ${m.text.includes("Missed") ? "missed-call-text" : ""}`}>
+  {m.text}
+</div>
+                    )}
+
+                    <div className="msg-footer">
+                      {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {m.sender_id === currentUser.id && <span className="read-status">{m.is_read ? " ✓✓" : " ✓"}</span>}
                     </div>
                   </div>
                 </div>
               ))}
-              {isOtherTyping && (
-                <div className="typing-indicator">
-                  <span></span><span></span><span></span>
-                </div>
-              )}
               <div ref={scrollRef} />
             </div>
-            <form className="input-box" onSubmit={sendMessage}>
-              <input 
-                value={newMessage} 
-                onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} 
-                placeholder="Write a message..." 
-              />
-              <button type="submit">SEND</button>
+
+            <form className="input-area" onSubmit={sendMessage}>
+              <label className="attach-btn">
+                <input type="file" onChange={handleFileUpload} hidden disabled={uploading} />
+                {uploading ? "..." : "📎"}
+              </label>
+              <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." autoFocus />
+              <button type="submit">Send</button>
             </form>
           </>
         ) : (
-          <div className="empty">Select a conversation to start messaging</div>
+          <div className="empty"><h2>Select a chat</h2></div>
         )}
       </div>
 
-      {showCreateGroup && (
-        <div className="modal-bg">
-          <form className="modal" onSubmit={handleCreateGroup}>
-            <h3>Create Group</h3>
-            <input placeholder="Name" value={groupName} onChange={e => setGroupName(e.target.value)} required />
-            <textarea placeholder="Description" value={groupDesc} onChange={e => setGroupDesc(e.target.value)} />
-            <div className="modal-btns">
-              <button type="button" onClick={() => setShowCreateGroup(false)}>Cancel</button>
-              <button type="submit" className="confirm-btn">Create</button>
-            </div>
-          </form>
-        </div>
-      )}
-
       <style jsx>{`
-        .container { display: flex; height: 100vh; background: #0f172a; color: white; font-family: 'Inter', system-ui, sans-serif; }
-        .sidebar { width: 320px; border-right: 1px solid #1e293b; background: #020617; display: flex; flex-direction: column; }
-        .tabs { display: flex; border-bottom: 1px solid #1e293b; }
-        .tabs button { flex: 1; padding: 18px; background: none; border: none; color: #64748b; cursor: pointer; font-weight: bold; }
-        .tabs button.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; background: #0f172a; }
-        .list-content { flex: 1; overflow-y: auto; padding: 15px; }
-        .section-title { font-size: 11px; color: #475569; margin: 10px 0 15px; letter-spacing: 1px; font-weight: bold; }
-        .row { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; margin-bottom: 4px; transition: 0.2s; }
-        .row:hover { background: #1e293b; }
-        .row.active { background: #2563eb; }
-        .avatar { width: 42px; height: 42px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .avatar.group { background: #10b981; }
-        .name { font-size: 14px; font-weight: 600; }
-        .meta { font-size: 12px; opacity: 0.6; }
-        .create-btn { width: 100%; padding: 12px; background: #3b82f6; border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        .messenger-container { display: flex; height: 100vh; background: #0f172a; color: white; }
+        .sidebar { width: 350px; border-right: 1px solid #1e293b; display: flex; flex-direction: column; background: #020617; }
+        .sidebar-header { background: #0f172a; border-bottom: 1px solid #1e293b; }
+        .tabs { display: flex; }
+        .tabs button { flex: 1; padding: 18px; border: none; background: none; color: #64748b; cursor: pointer; font-weight: 600; }
+        .tabs button.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
+        .search-box { padding: 12px; }
+        .search-box input { width: 100%; padding: 10px; background: #1e293b; border: 1px solid #334155; border-radius: 20px; color: white; outline: none; }
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 8px; }
+        .item { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 12px; cursor: pointer; position: relative; transition: background 0.2s; }
+        .item:hover { background: #1e293b; }
+        .item.active { background: #2563eb; }
+        .avatar-wrapper { position: relative; width: 48px; height: 48px; flex-shrink: 0; }
+        .avatar { width: 100%; height: 100%; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .avatar.grp { background: #10b981; }
+        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 13px; height: 13px; background: #22c55e; border-radius: 50%; border: 2px solid #020617; z-index: 10; }
+        .info { display: flex; flex-direction: column; justify-content: center; flex: 1; }
+        .name { font-weight: 500; font-size: 15px; }
+        .active-now { font-size: 12px; color: #22c55e; font-weight: bold; }
+        .status { font-size: 12px; color: #64748b; }
+        .sidebar-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; margin-left: auto; position: relative; min-width: 30px; }
+        .unread-badge { background: #ef4444; color: white; font-size: 11px; font-weight: bold; min-width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+        .sidebar-item-actions { opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .item:hover .sidebar-item-actions { opacity: 1; }
+        .sidebar-dots { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 20px; padding: 4px; border-radius: 6px; }
+        .sidebar-menu { position: absolute; right: 0; top: 100%; margin-top: 5px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; z-index: 1000; min-width: 140px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
+        .sidebar-menu button { width: 100%; padding: 12px 16px; background: none; border: none; color: #f1f5f9; text-align: left; cursor: pointer; font-size: 13px; }
+        .sidebar-menu button:hover { background: #334155; }
+        .sidebar-menu .delete-btn { color: #f87171 !important; }
+        .chat-window { flex: 1; display: flex; flex-direction: column; background: #0b141a; }
+        .chat-header { padding: 14px 25px; background: #1e293b; display: flex; align-items: center; }
+        .header-online { font-size: 12px; color: #22c55e; margin-left: 10px; font-weight: bold; }
+        .message-list { flex: 1; padding: 20px 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-opacity: 0.05; }
+        .msg-wrapper { display: flex; width: 100%; }
+        .sent-wrap { justify-content: flex-end; }
+        .recv-wrap { justify-content: flex-start; }
+        .msg-bubble { max-width: 75%; min-width: 120px; padding: 8px 12px; border-radius: 12px; font-size: 14px; position: relative; }
+        .sent { background: #005c4b; color: white; border-top-right-radius: 0; }
+        .received { background: #202c33; color: white; border-top-left-radius: 0; }
+        .input-area { padding: 10px 20px; display: flex; gap: 12px; background: #202c33; align-items: center; }
+        .input-area input { flex: 1; padding: 12px; background: #2a3942; border: none; color: white; border-radius: 8px; outline: none; }
+        .input-area button { background: #3b82f6; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; }
+        .media-content { margin-bottom: 8px; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; }
+        .chat-img { max-width: 300px; max-height: 400px; width: auto; height: auto; object-fit: contain; border-radius: 8px; display: block; }
+        .chat-video { max-width: 300px; border-radius: 8px; }
+        .chat-audio { max-width: 100%; height: 40px; }
+        .msg-actions { position: absolute; top: 4px; right: 4px; opacity: 0; transition: opacity 0.2s; }
+        .msg-bubble:hover .msg-actions { opacity: 1; }
+        .dots-v { background: none; border: none; color: #fff; cursor: pointer; font-size: 16px; padding: 0 4px; }
+        .msg-menu { position: absolute; right: 0; top: 20px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; z-index: 100; min-width: 80px; }
+        .msg-menu button { display: block; width: 100%; padding: 8px; background: none; border: none; color: white; text-align: left; cursor: pointer; font-size: 12px; }
+        .msg-menu button:hover { background: #334155; }
+        .edit-form input { width: 100%; padding: 4px; background: #020617; border: 1px solid #3b82f6; color: white; border-radius: 4px; margin-bottom: 4px; outline: none; }
+        .edit-buttons { display: flex; gap: 4px; }
+        .edit-buttons button { font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer; border: none; }
+        .edit-buttons button[type="submit"] { background: #3b82f6; color: white; }
+        .message-list {
+  position: relative; /* Essential for absolute positioning of the button */
+}
 
-        .chat-window { flex: 1; display: flex; flex-direction: column; background: #0f172a; }
-        .header { padding: 20px 25px; border-bottom: 1px solid #1e293b; font-weight: bold; background: #020617; font-size: 17px; }
-        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-        
-        .bubble-wrapper { display: flex; width: 100%; }
-        .sent-wrapper { justify-content: flex-end; }
-        .received-wrapper { justify-content: flex-start; }
-        
-        .bubble { max-width: 65%; padding: 10px 15px; border-radius: 18px; position: relative; }
-        .sent { background: #2563eb; border-bottom-right-radius: 4px; }
-        .received { background: #1e293b; border-bottom-left-radius: 4px; border: 1px solid #334155; }
-        
-        .footer { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 4px; font-size: 10px; opacity: 0.7; }
-        .status { color: #93c5fd; font-weight: bold; }
+.scroll-bottom-btn {
+  position: sticky; /* Sticky keeps it floating over the content inside the list */
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3b82f6;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  transition: opacity 0.3s, transform 0.2s;
+}
 
-        .input-box { padding: 20px; display: flex; gap: 12px; background: #020617; border-top: 1px solid #1e293b; }
-        .input-box input { flex: 1; padding: 14px 22px; background: #1e293b; border: 1px solid #334155; color: white; border-radius: 30px; outline: none; }
-        .input-box button { background: #3b82f6; border: none; color: white; padding: 0 25px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+.scroll-bottom-btn:hover {
+  background: #2563eb;
+  transform: translateX(-50%) scale(1.1);
+}
 
-        /* Typing Dot Animation */
-        .typing-indicator { display: flex; gap: 4px; padding: 10px 15px; background: #1e293b; border-radius: 15px; width: fit-content; margin-bottom: 10px; }
-        .typing-indicator span { width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out; }
-        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+.scroll-bottom-btn:active {
+  transform: translateX(-50%) scale(0.9);
+}
+  .chat-header {
+  padding: 14px 25px;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Ensures left stays left, right stays right */
+}
 
-        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal { background: #1e293b; padding: 30px; border-radius: 16px; width: 380px; display: flex; flex-direction: column; gap: 15px; }
-        .modal input, .modal textarea { padding: 12px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 8px; }
-        .confirm-btn { background: #3b82f6; border: none; padding: 12px; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .loading, .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 16px; }
+.header-right {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.call-icon-btn {
+  background: none;
+  border: none;
+  color: #94a3b8; /* Muted gray */
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.call-icon-btn:hover {
+  background: #334155;
+  color: #3b82f6; /* Blue on hover */
+  transform: scale(1.1);
+}
+  .missed-call-text {
+  color: #f87171 !important; /* Red color for visibility */
+  font-style: italic;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.missed-call-text::before {
+  content: "⚠️ ";
+  margin-right: 5px;
+}
+
+.call-icon-btn svg {
+  display: block;
+}
+        .call-modal { position: fixed; top: 20px; right: 20px; background: #1e293b; padding: 20px; border-radius: 12px; border: 2px solid #3b82f6; z-index: 9999; box-shadow: 0 10px 15px rgba(0,0,0,0.5); }
+      .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+      .accept { background: #22c55e; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; }
+      .decline { background: #ef4444; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; }
       `}</style>
     </div>
   );

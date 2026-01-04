@@ -113,6 +113,7 @@ export default function AddEditService() {
 
     router.push("/");
   };
+ 
 
   // ---------------- Delete ----------------
   const handleDelete = async () => {
@@ -276,4 +277,5 @@ export default function AddEditService() {
       `}</style>
     </div>
   );
-}
+  }
+

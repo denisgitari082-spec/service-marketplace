@@ -1,218 +1,225 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "../src/lib/supabaseClient";
 
-type Message = { id: string; sender_id?: string; receiver_id?: string; group_id?: string; text: string; created_at: string; };
-type ChatUser = { id: string; email: string };
-type Group = { id: string; name: string; description: string };
+// --- Types ---
+type Service = {
+  id: string; title: string; description: string; category: string;
+  provider: string; contact: string; location: string; owner_id: string;
+};
 
-export default function MessagesPage() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [view, setView] = useState<"chats" | "discover">("chats");
-  const [chats, setChats] = useState<ChatUser[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<ChatUser[]>([]);
-  const [suggestedGroups, setSuggestedGroups] = useState<Group[]>([]);
-  const [selectedTarget, setSelectedTarget] = useState<ChatUser | Group | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [groupDesc, setGroupDesc] = useState("");
+type GroupPost = {
+  id: string; content: string; image_url: string; location_name: string;
+  category: string; created_at: string; user_id: string; is_contract: boolean;
+};
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+export default function Home() {
+  const router = useRouter();
+  const [view, setView] = useState<"marketplace" | "pro-circle">("marketplace");
+  const [services, setServices] = useState<Service[]>([]);
+  const [posts, setPosts] = useState<GroupPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // 1. Setup User and Load Discovery Data immediately
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUser(user);
-        // Force profile creation so you are searchable
-        await supabase.from("profiles").upsert({ id: user.id, email: user.email });
-        
-        // Load Discovery Data (Users & Groups)
-        const { data: uData } = await supabase.from("profiles").select("id, email").neq("id", user.id).limit(10);
-        const { data: gData } = await supabase.from("groups").select("*").limit(10);
-        setSuggestedUsers(uData || []);
-        setSuggestedGroups(gData || []);
-
-        // Load existing chat history list
-        fetchChatHistory(user.id);
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        router.push("/auth/login");
+        return;
       }
+      
+      // Initial fetch for data and existing unread messages
+      fetchData();
+      fetchInitialUnreadCount(data.user.id);
+      subscribeToMessages(data.user.id);
     };
     init();
-  }, []);
+  }, [view]);
 
-  const fetchChatHistory = async (userId: string) => {
-    const { data } = await supabase.from("messages").select("sender_id, receiver_id").or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
-    if (data) {
-      const ids = Array.from(new Set(data.flatMap(m => [m.sender_id, m.receiver_id]))).filter(id => id !== userId);
-      const { data: users } = await supabase.from("profiles").select("id, email").in("id", ids);
-      setChats(users || []);
-    }
+  const fetchInitialUnreadCount = async (userId: string) => {
+    const { count, error } = await supabase
+      .from("messages")
+      .select("*", { count: 'exact', head: true })
+      .eq("receiver_id", userId)
+      .eq("read", false); // Ensure your DB has a 'read' boolean column
+    
+    if (!error && count !== null) setUnreadCount(count);
   };
 
-  // 2. Fetch Messages when a user/group is selected
-  useEffect(() => {
-    if (!selectedTarget || !currentUser) return;
-    
-    const loadMsgs = async () => {
-      let query = supabase.from("messages").select("*").order("created_at", { ascending: true });
-      if ("email" in selectedTarget) {
-        query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedTarget.id}),and(sender_id.eq.${selectedTarget.id},receiver_id.eq.${currentUser.id})`);
-      } else {
-        query = query.eq("group_id", selectedTarget.id);
-      }
-      const { data } = await query;
-      setMessages(data || []);
-    };
-    loadMsgs();
-
-    // Subscribe to new messages
-    const channel = supabase.channel('realtime-msgs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-        setMessages(prev => [...prev, payload.new as Message]);
-    }).subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [selectedTarget, currentUser]);
-
-  // 3. ACTUAL Send Function
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !selectedTarget || !currentUser) return;
-
-    const isGroup = !("email" in selectedTarget);
-    const { error } = await supabase.from("messages").insert([{
-      text: newMessage,
-      sender_id: currentUser.id,
-      receiver_id: isGroup ? null : selectedTarget.id,
-      group_id: isGroup ? selectedTarget.id : null
-    }]);
-
-    if (!error) {
-      setNewMessage("");
-      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  const fetchData = async () => {
+    setLoading(true);
+    if (view === "marketplace") {
+      const { data } = await supabase.from("services").select("*");
+      setServices(data || []);
     } else {
-      alert("Error sending: " + error.message);
+      const { data } = await supabase.from("group_posts").select("*").order("created_at", { ascending: false });
+      setPosts(data || []);
     }
+    setLoading(false);
   };
 
-  const handleCreateGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { data, error } = await supabase.from("groups")
-      .insert([{ name: groupName, description: groupDesc, created_by: currentUser.id }])
-      .select().single();
-    
-    if (!error) {
-      setSuggestedGroups(prev => [data, ...prev]);
-      setShowCreateGroup(false);
-      setGroupName("");
-      setGroupDesc("");
-      setSelectedTarget(data);
-    }
+  const subscribeToMessages = (userId: string) => {
+    return supabase
+      .channel("inbox")
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages', 
+        filter: `receiver_id=eq.${userId}` 
+      }, () => setUnreadCount(prev => prev + 1))
+      .subscribe();
   };
 
   return (
-    <div className="messenger-container">
-      <div className="sidebar">
-        <div className="tabs">
-          <button className={view === "chats" ? "active" : ""} onClick={() => setView("chats")}>Inbox</button>
-          <button className={view === "discover" ? "active" : ""} onClick={() => setView("discover")}>Explore</button>
+    <div className="container">
+      {/* --- Header & Navigation --- */}
+      <header className="nav-header">
+        <h1 className="logo">ProConnect</h1>
+        
+        <div className="view-toggle">
+          <button className={view === "marketplace" ? "active" : ""} onClick={() => setView("marketplace")}>Marketplace</button>
+          <button className={view === "pro-circle" ? "active" : ""} onClick={() => setView("pro-circle")}>Pro Circle</button>
         </div>
 
-        <div className="sidebar-content">
-          {view === "chats" ? (
-            <>
-              <h4>Suggested to Chat</h4>
-              {suggestedUsers.map(u => (
-                <div key={u.id} className={`item ${selectedTarget?.id === u.id ? 'active' : ''}`} onClick={() => setSelectedTarget(u)}>
-                  {u.email.split('@')[0]} <small>• New</small>
+        <div className="header-actions">
+          <Link href="/group" className="header-btn" title="Groups">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </Link>
+
+          <Link href="/messages" className="msg-icon-container">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+          </Link>
+        </div>
+      </header>
+
+      {/* --- Search & Action Bar --- */}
+      <div className="action-bar">
+        <div className="search-wrapper">
+          <svg className="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input 
+            className="search-box" 
+            placeholder={view === "marketplace" ? "Search services..." : "Search ideas..."} 
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        
+        <Link href={view === "marketplace" ? "/create-service" : "/create-post"} className="add-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Post {view === "marketplace" ? "Service" : "Idea"}</span>
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="loader-container">
+          <div className="spinner"></div>
+          <p>Loading {view}...</p>
+        </div>
+      ) : (
+        <div className="content-grid">
+          {view === "marketplace" ? (
+            services.map(service => (
+              <div key={service.id} className="card service-card">
+                <div className="card-header">
+                  <h3>{service.title}</h3>
+                  <span className="tag">{service.category}</span>
                 </div>
-              ))}
-              {chats.length > 0 && <h4>Recent Chats</h4>}
-              {chats.map(u => (
-                <div key={u.id} className={`item ${selectedTarget?.id === u.id ? 'active' : ''}`} onClick={() => setSelectedTarget(u)}>
-                  {u.email.split('@')[0]}
+                <p className="card-desc">{service.description}</p>
+                <div className="card-footer">
+                  <a href={`https://wa.me/${service.contact}`} className="btn-wa">WhatsApp</a>
+                  <button onClick={() => router.push(`/chat/${service.owner_id}`)} className="btn-msg">Message</button>
                 </div>
-              ))}
-            </>
+              </div>
+            ))
           ) : (
-            <div className="explore-view">
-              <button className="create-group-btn" onClick={() => setShowCreateGroup(true)}>+ Create New Group</button>
-              <h4>Public Groups</h4>
-              {suggestedGroups.map(g => (
-                <div key={g.id} className={`item ${selectedTarget?.id === g.id ? 'active' : ''}`} onClick={() => setSelectedTarget(g)}>
-                  {g.name}
+            posts.map(post => (
+              <div key={post.id} className="card post-card">
+                <div className="post-header">
+                  <span className="pro-badge">PRO</span>
+                  {post.is_contract && <span className="contract-tag">CONTRACT</span>}
                 </div>
-              ))}
-            </div>
+                {post.image_url && <img src={post.image_url} alt="Site" className="site-img" />}
+                <p className="post-content">{post.content}</p>
+                <div className="location-row">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  <span>{post.location_name}</span>
+                </div>
+                <div className="card-footer">
+                  <button className="btn-collab">Exchange Ideas</button>
+                </div>
+              </div>
+            ))
           )}
-        </div>
-      </div>
-
-      <div className="chat-window">
-        {selectedTarget ? (
-          <>
-            <div className="chat-header">
-                <strong>{"email" in selectedTarget ? selectedTarget.email : selectedTarget.name}</strong>
-            </div>
-            <div className="message-list">
-              {messages.map(m => (
-                <div key={m.id} className={`msg ${m.sender_id === currentUser?.id ? 'sent' : 'received'}`}>{m.text}</div>
-              ))}
-              <div ref={scrollRef} />
-            </div>
-            <form className="input-area" onSubmit={sendMessage}>
-              <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." />
-              <button type="submit">Send</button>
-            </form>
-          </>
-        ) : (
-          <div className="empty">Select a user from Inbox or a Group from Explore</div>
-        )}
-      </div>
-
-      {showCreateGroup && (
-        <div className="modal-overlay">
-          <form className="modal" onSubmit={handleCreateGroup}>
-            <h3>New Group</h3>
-            <input placeholder="Group Name" value={groupName} onChange={e => setGroupName(e.target.value)} required />
-            <textarea placeholder="Description" value={groupDesc} onChange={e => setGroupDesc(e.target.value)} />
-            <div className="modal-actions">
-              <button type="button" onClick={() => setShowCreateGroup(false)}>Cancel</button>
-              <button type="submit" className="confirm">Create</button>
-            </div>
-          </form>
         </div>
       )}
 
       <style jsx>{`
-        .messenger-container { display: flex; height: 100vh; background: #0f172a; color: white; }
-        .sidebar { width: 300px; border-right: 1px solid #1e293b; display: flex; flex-direction: column; background: #111827; }
-        .tabs { display: flex; border-bottom: 1px solid #1e293b; }
-        .tabs button { flex: 1; padding: 15px; background: none; border: none; color: #64748b; cursor: pointer; }
-        .tabs button.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
-        .sidebar-content { flex: 1; overflow-y: auto; padding: 15px; }
-        .item { padding: 12px; border-radius: 8px; cursor: pointer; margin-bottom: 8px; background: #1e293b; font-size: 14px; }
-        .item:hover { background: #334155; }
-        .item.active { background: #3b82f6; }
-        .create-group-btn { width: 100%; padding: 12px; background: #10b981; border: none; border-radius: 8px; color: white; font-weight: bold; margin-bottom: 20px; cursor: pointer; }
-        .chat-window { flex: 1; display: flex; flex-direction: column; }
-        .chat-header { padding: 20px; border-bottom: 1px solid #1e293b; background: #111827; }
-        .message-list { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 70%; padding: 10px 15px; border-radius: 12px; font-size: 14px; }
-        .sent { align-self: flex-end; background: #3b82f6; }
-        .received { align-self: flex-start; background: #334155; }
-        .input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #1e293b; }
-        .input-area input { flex: 1; padding: 12px; background: #1e293b; border: none; color: white; border-radius: 8px; outline: none; }
-        .input-area button { background: #3b82f6; border: none; color: white; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal { background: #1e293b; padding: 25px; border-radius: 12px; width: 350px; display: flex; flex-direction: column; gap: 15px; }
-        .modal input, .modal textarea { padding: 10px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; }
-        .confirm { background: #3b82f6; border: none; padding: 10px; color: white; border-radius: 6px; cursor: pointer; }
-        h4 { font-size: 11px; color: #4b5563; text-transform: uppercase; margin: 15px 0 10px 0; }
-        .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #4b5563; }
+        .container { background: #0f172a; min-height: 100vh; color: white; padding: 20px; font-family: sans-serif; }
+        
+        .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 10px; flex-wrap: wrap; }
+        .logo { font-size: 1.4rem; font-weight: 800; background: linear-gradient(90deg, #3b82f6, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+        
+        .view-toggle { background: #1e293b; padding: 4px; border-radius: 12px; display: flex; }
+        .view-toggle button { background: none; border: none; color: #94a3b8; padding: 8px 14px; cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
+        .view-toggle button.active { background: #3b82f6; color: white; }
+        
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .header-btn, .msg-icon-container { position: relative; color: #94a3b8; padding: 10px; background: #1e293b; border-radius: 12px; display: flex; transition: 0.2s; }
+        .header-btn:hover, .msg-icon-container:hover { color: #3b82f6; background: #334155; }
+        
+        .badge { position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; font-size: 10px; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #0f172a; }
+
+        .action-bar { display: flex; gap: 12px; max-width: 900px; margin: 0 auto 30px auto; width: 100%; }
+        .search-wrapper { position: relative; flex: 2; min-width: 0; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
+        .search-box { width: 100%; padding: 12px 12px 12px 40px; border-radius: 12px; border: 1px solid #334155; background: #1e293b; color: white; outline: none; }
+        
+        .add-btn { background: #3b82f6; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-radius: 12px; text-decoration: none; color: white; font-weight: 600; white-space: nowrap; flex: 0 0 auto; }
+
+        .content-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: #1e293b; border-radius: 20px; padding: 20px; border: 1px solid #334155; display: flex; flex-direction: column; }
+        .card-desc { color: #cbd5e1; line-height: 1.5; margin-bottom: 20px; }
+        .tag { background: rgba(59, 130, 246, 0.1); color: #60a5fa; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        
+        .site-img { width: 100%; height: 180px; object-fit: cover; border-radius: 14px; margin: 15px 0; }
+        .location-row { display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 13px; margin: 10px 0; }
+        .card-footer { display: flex; gap: 10px; margin-top: auto; }
+        .btn-wa { background: #22c55e; flex: 1; text-align: center; padding: 10px; border-radius: 10px; text-decoration: none; color: white; font-weight: 600; }
+        .btn-msg { background: #3b82f6; flex: 1; border: none; color: white; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .btn-collab { width: 100%; background: #6366f1; border: none; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+
+        .loader-container { text-align: center; padding: 50px; }
+        .spinner { width: 30px; height: 30px; border: 3px solid #334155; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 600px) {
+          .nav-header { flex-direction: column; gap: 15px; }
+          .logo { align-self: flex-start; }
+          .header-actions { position: absolute; top: 20px; right: 20px; }
+          .action-bar { flex-direction: column; }
+          .add-btn { height: 48px; justify-content: center; width: 100%; }
+        }
       `}</style>
     </div>
   );
