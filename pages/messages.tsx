@@ -38,6 +38,10 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [uploading, setUploading] = useState(false);
+
+
+
+
   const { user } = router.query;
   // --- SIDEBAR STATE ---
 const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);

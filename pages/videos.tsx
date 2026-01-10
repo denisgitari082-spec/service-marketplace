@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "../src/lib/supabaseClient";
 
 type VideoPost = {
@@ -49,7 +49,10 @@ const [downloadingPostId, setDownloadingPostId] = useState<string | null>(null);
 const [showViewers, setShowViewers] = useState<string | null>(null);
 const [viewers, setViewers] = useState<any[]>([]);
 const [followingIds, setFollowingIds] = useState<string[]>([]);
-
+const [searchOpen, setSearchOpen] = useState(false);
+const [searchQuery, setSearchQuery] = useState("");
+const [menuPostId, setMenuPostId] = useState<string | null>(null);
+const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
 
 
@@ -304,6 +307,39 @@ const FollowIcon = ({ following }: { following: boolean }) => (
     </svg>
   )
 );
+const SearchIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+
+const filteredPosts = useMemo(() => {
+  if (!searchQuery.trim()) return posts;
+
+  const q = searchQuery.toLowerCase();
+
+  return posts.filter(p => {
+    const nameMatch =
+      p.profiles?.full_name?.toLowerCase().includes(q);
+
+    const contentMatch =
+      p.content?.toLowerCase().includes(q);
+
+    return nameMatch || contentMatch;
+  });
+}, [posts, searchQuery]);
+
 
 
 
@@ -608,6 +644,14 @@ useEffect(() => {
 }, [fetchPosts]);
 
 
+useEffect(() => {
+  supabase.auth.getUser().then(({ data }) => {
+    setCurrentUserId(data.user?.id ?? null);
+  });
+}, []);
+
+
+
 
   const handlePost = async (e: React.FormEvent, type: 'reel' | 'meme') => {
     e.preventDefault();
@@ -675,29 +719,93 @@ useEffect(() => {
         <h2>Reels|Memes</h2>
         </div>
 <div className="icon-group">
-  <button 
-    className={`icon-btn ${activeTab === 'reel' ? 'active-reel' : ''}`}
-    onClick={() => setActiveTab(activeTab === 'reel' ? 'none' : 'reel')}
-  >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-      <path d="M2 12h20M12 2v20M7 2v20M17 2v20"/>
-    </svg>
-    <span className="icon-label"></span>
-  </button>
+{searchOpen ? (
+  <div className="search-wrapper">
+    <div className="search-bar open-left">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
 
-  <button 
-    className={`icon-btn ${activeTab === 'meme' ? 'active-meme' : ''}`}
-    onClick={() => setActiveTab(activeTab === 'meme' ? 'none' : 'meme')}
-  >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-      <circle cx="8.5" cy="8.5" r="1.5"/>
-      <polyline points="21 15 16 10 5 21"/>
-    </svg>
-    <span className="icon-label"></span>
-  </button>
+      <input
+        autoFocus
+        type="text"
+        placeholder="Search…"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+
+      <button
+        className="close-search"
+        onClick={() => {
+          setSearchOpen(false);
+          setSearchQuery("");
+        }}
+      >
+        ×
+      </button>
+    </div>
+  </div>
+) : (
+
+    <>
+      {/* 🔍 SEARCH ICON */}
+      <button
+        className="icon-btn"
+        onClick={() => setSearchOpen(true)}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </button>
+
+      {/* 🎞 REEL */}
+      <button 
+        className={`icon-btn ${activeTab === 'reel' ? 'active-reel' : ''}`}
+        onClick={() => setActiveTab(activeTab === 'reel' ? 'none' : 'reel')}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+          <path d="M2 12h20M12 2v20M7 2v20M17 2v20"/>
+        </svg>
+        <span className="icon-label"></span>
+      </button>
+
+      {/* 🖼 MEME */}
+      <button 
+        className={`icon-btn ${activeTab === 'meme' ? 'active-meme' : ''}`}
+        onClick={() => setActiveTab(activeTab === 'meme' ? 'none' : 'meme')}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span className="icon-label"></span>
+      </button>
+    </>
+  )}
 </div>
+
       </div>
 
       {/* UPLOAD SECTIONS */}
@@ -759,9 +867,37 @@ useEffect(() => {
       {/* FEED */}
 <div className="video-feed">
   {loading ? (
-    <p>Loading feed...</p>
+   <div className="loading-feed">
+  <div className="spinner"></div>
+  <span>Loading feed</span>
+</div>
+
+
+  ) : filteredPosts.length === 0 && searchQuery ? (
+    <div className="empty-search">
+      <svg
+        width="40"
+        height="40"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ opacity: 0.6 }}
+      >
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+
+      <p>No results found</p>
+      <span>
+        No users match <strong>“{searchQuery}”</strong>
+      </span>
+    </div>
+
   ) : (
-    posts.map((post) => {
+    filteredPosts.map((post) => {
       const isVideo = post.video_url?.includes('.mp4') || post.video_url?.includes('reels');
       const hasMedia = !!post.video_url;
 
@@ -795,9 +931,74 @@ useEffect(() => {
   </div>
 
   {/* More button */}
-  <button className="more-btn" aria-label="More options">
+<div className="more-wrapper">
+  <button
+    className="more-btn"
+    onClick={() =>
+      setMenuPostId(menuPostId === post.id ? null : post.id)
+    }
+  >
     •••
   </button>
+
+  {menuPostId === post.id && (
+    <div className="post-menu">
+      {/* 🚨 REPORT */}
+      <button
+        className="menu-item danger"
+        onClick={() => {
+          alert("Reported");
+          setMenuPostId(null);
+        }}
+      >
+         Report
+      </button>
+
+      {/* 💬 MESSAGE USER */}
+      <button
+        className="menu-item"
+        onClick={() => {
+          window.location.href = `/messages?user=${post.user_id}`;
+        }}
+      >
+         Message user
+      </button>
+
+      {/* ✏️ EDIT / 🗑 DELETE — ONLY OWNER */}
+      {currentUserId === post.user_id && (
+        <>
+          <button
+            className="menu-item"
+            onClick={() => {
+              alert("Edit coming next");
+              setMenuPostId(null);
+            }}
+          >
+             Edit
+          </button>
+
+          <button
+            className="menu-item danger"
+            onClick={async () => {
+              if (!confirm("Delete this post?")) return;
+
+              await supabase
+                .from("video_posts")
+                .delete()
+                .eq("id", post.id);
+
+              setPosts(prev => prev.filter(p => p.id !== post.id));
+              setMenuPostId(null);
+            }}
+          >
+             Delete
+          </button>
+        </>
+      )}
+    </div>
+  )}
+</div>
+
 </div>
 
 
@@ -1145,6 +1346,169 @@ useEffect(() => {
 
 
       <style jsx>{`
+
+      .loading-feed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 0;
+  font-size: 14px;
+  color: #999;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(255, 255, 255, 0.15);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+      .more-wrapper {
+  position: relative;
+}
+
+.post-menu {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  background: #111;
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 160px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  z-index: 50;
+}
+
+.menu-item {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.menu-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.menu-item.danger {
+  color: #ff5c5c;
+}
+
+
+      .search-wrapper {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: flex-end; /* 🔥 critical */
+}
+  .empty-search {
+  text-align: center;
+  padding: 40px 20px;
+  color: #888;
+}
+
+.empty-search p {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+.empty-search span {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+
+.icon-group {
+  display: flex;
+  align-items: center;
+  padding-top: 10px;
+  padding-bottom: 0px;
+  padding-right: 10px;
+  gap: 8px;
+  position: relative; /* anchor */
+}
+
+/* Wrapper anchors the bar on the right */
+.search-wrapper {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Bar grows LEFT */
+.search-bar.open-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 220px;
+  padding: 6px 12px;
+  background: #020617;
+  border: 1px solid #334155;
+  border-radius: 999px;
+
+  transform-origin: right center;
+  animation: expandLeft 0.2s ease-out;
+}
+
+@keyframes expandLeft {
+  from {
+    opacity: 0;
+    transform: scaleX(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #020617;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 6px 12px;
+  width: 220px;
+}
+
+.search-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white;
+  outline: none;
+  font-size: 14px;
+}
+
+.close-search {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 20px;
+  cursor: pointer;
+}
+
 
 .follow-btn {
   color: #94a3b8;
@@ -1780,7 +2144,8 @@ textarea {
   width: 100vw;
   min-height: 100vh;
   margin: 0;
-  padding: 5px; /* optional, small breathing room */
+  color: white;
+  padding: 0px; /* optional, small breathing room */
   background-color: #000;
   box-sizing: border-box;
 }
@@ -1808,7 +2173,7 @@ html, body, #__next {
           border-bottom: 1px solid #1e293b;
         }
         
-        .icon-group { display: flex; gap: 10px; }
+    
         
         .icon-btn {
           display: flex;

@@ -448,14 +448,10 @@ return (
         </Link>
 
         {/* User Profile Avatar */}
-<label className="user-profile-trigger">
-  <input
-    type="file"
-    accept="image/*"
-    hidden
-    onChange={handleAvatarUpload}
-  />
-
+<div
+  className="user-profile-trigger"
+  onClick={() => router.push(`/userprofile?id=${profile?.id}`)}
+>
   {profile?.avatar_url ? (
     <img src={profile.avatar_url} className="profile-img" />
   ) : (
@@ -463,7 +459,8 @@ return (
       {profile?.full_name?.[0]?.toUpperCase() || "🧑"}
     </div>
   )}
-</label>
+</div>
+
 
       </div>
     </header>
@@ -510,7 +507,7 @@ return (
               <img src={owner.avatar_url} alt={owner.full_name} className="author-avatar" />
             ) : (
               <div className="author-avatar placeholder">
-                {owner?.full_name?.[0]?.toUpperCase() || "🧑"}
+               {owner?.full_name?.[0]?.toUpperCase() || "🧑"}
               </div>
             )}
             <div className="author-meta">
