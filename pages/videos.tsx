@@ -308,7 +308,6 @@ const FollowIcon = ({ following }: { following: boolean }) => (
 
 
 
-
 const toggleFollow = async (targetUserId: string) => {
   const {
     data: { user },
@@ -341,38 +340,70 @@ const toggleFollow = async (targetUserId: string) => {
       : [...prev, targetUserId]
   );
 
-  // 2️⃣ Persist follow state
-  if (isFollowing) {
-    await supabase
-      .from("user_follows")
-      .delete()
-      .eq("follower_id", user.id)
-      .eq("following_id", targetUserId);
-  } else {
-    await supabase
-      .from("user_follows")
-      .insert({
-        follower_id: user.id,
-        following_id: targetUserId,
-      });
-  }
+  try {
+    // 2️⃣ Persist follow state
+    if (isFollowing) {
+      const { error } = await supabase
+        .from("user_follows")
+        .delete()
+        .eq("follower_id", user.id)
+        .eq("following_id", targetUserId);
 
-  // 3️⃣ 🔥 READ THE SOURCE OF TRUTH (user_follows)
-  const { count, error } = await supabase
-    .from("profile_follow_counts")
-    .select("*", { count: "exact", head: true })
-    .eq("followers_count", targetUserId);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("user_follows")
+        .insert({
+          follower_id: user.id,
+          following_id: targetUserId,
+        });
 
-  if (!error && typeof count === "number") {
+      if (error) throw error;
+    }
+
+    // 3️⃣ 🔥 Read the SOURCE OF TRUTH (profiles.followers_count)
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("followers_count")
+      .eq("id", targetUserId)
+      .single();
+
+    if (error) throw error;
+
+    if (typeof data?.followers_count === "number") {
+      setPosts(prev =>
+        prev.map(p =>
+          p.user_id === targetUserId
+            ? { ...p, followers_count: data.followers_count }
+            : p
+        )
+      );
+    }
+  } catch (err) {
+    console.error("Follow toggle failed:", err);
+
+    // 4️⃣ Rollback optimistic update on failure
     setPosts(prev =>
       prev.map(p =>
         p.user_id === targetUserId
-          ? { ...p, followers_count: count }
+          ? {
+              ...p,
+              followers_count: isFollowing
+                ? p.followers_count + 1
+                : Math.max(0, p.followers_count - 1),
+            }
           : p
       )
     );
+
+    setFollowingIds(prev =>
+      isFollowing
+        ? [...prev, targetUserId]
+        : prev.filter(id => id !== targetUserId)
+    );
   }
 };
+
 
 
 
@@ -396,12 +427,11 @@ const { data: postsData, error: postsError } = await supabase
         profiles!video_posts_user_id_fkey (
       full_name,
       avatar_url,
-      followers_count
+       followers_count
     ),
     post_likes(count),
     post_comments!fk_post_comments_video_posts(count),
     post_views(count)
-   
   `)
   .order("created_at", { ascending: false });
 
@@ -444,7 +474,7 @@ if (user) {
 
     // Normalize posts
 const formattedPosts: VideoPost[] = (postsData || []).map(p => {
-  const profile = p.profiles?.[0]; // 👈 extract once
+  const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
 
   return {
     id: p.id,
@@ -458,12 +488,12 @@ const formattedPosts: VideoPost[] = (postsData || []).map(p => {
     comments_count: p.post_comments?.[0]?.count ?? 0,
     views_count: p.post_views?.[0]?.count ?? 0,
 
-    followers_count: profile?.followers_count ?? 0,
+    followers_count: profile?.followers_count ?? 0, // ✅ ONLY HERE
 
-
-profiles: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
+    profiles: profile,
   };
 });
+
 
 
 
@@ -474,7 +504,7 @@ formattedPosts.forEach((p, i) => {
 });
 
 
-setPosts(formattedPosts);
+
 
 
     setPosts(formattedPosts);
