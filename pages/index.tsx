@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -139,7 +140,7 @@ const fetchComments = async (serviceId: string) => {
       )
     `)
     .eq("service_id", serviceId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
 
   if (!error && data) {
     const typedComments = data.map((comment: any) => ({
@@ -280,7 +281,9 @@ const fetchData = async () => {
     ),
     likes:service_likes(count),
     my_likes:service_likes(user_id)
-  `);
+  `)
+  .order("created_at", { ascending: false });
+ 
 
 console.log("SERVICE FROM SUPABASE:", data?.[0]);
 
@@ -419,7 +422,12 @@ return (
       
       <div className="view-toggle">
         <button className={view === "marketplace" ? "active" : ""} onClick={() => setView("marketplace")}>Marketplace</button>
-        <button className={view === "pro-circle" ? "active" : ""} onClick={() => setView("pro-circle")}>Pro Circle</button>
+        <button 
+    onClick={() => router.push("/videos")}
+  >
+    Reels|Memes
+  </button>
+
       </div>
 
       <div className="header-actions">
@@ -483,196 +491,74 @@ return (
       </Link>
     </div>
 
-      {loading ? (
-        <div className="loader-container">
-          <div className="spinner"></div>
-          <p>Loading {view}...</p>
-        </div>
-      ) : (
-        <div className="content-grid">
- {view === "marketplace" ? (
-services.map(service => {
-  const owner = service.profiles; 
-
-
-    return (
-      <div key={service.id} className="service-wrapper">
-
-        {/* ===== USER HEADER (OUTSIDE CARD) ===== */}
-<div className="author-row">
-  {owner?.avatar_url ? (
-    <img
-      src={owner.avatar_url}
-      alt={owner.full_name}
-      className="author-avatar"
-    />
-  ) : (
-    <div className="author-avatar placeholder">
-      {owner?.full_name?.[0]?.toUpperCase() || "🧑"}
-    </div>
-  )}
-
-  <div className="author-meta">
-    <span className="author-name">
-      {owner?.full_name || "Unknown User"}
-    </span>
-    <span className="author-category">{service.category}</span>
+ {loading ? (
+  <div className="loader-container">
+    <div className="spinner"></div>
+    <p>Loading Marketplace...</p>
   </div>
-</div>
-
-
-{/* ===== SERVICE CARD ===== */}
-<div className="card service-card">
-  <h3 className="service-title">{service.title}</h3>
-
-  <p
-  className={`card-desc ${
-    expandedDescriptions[service.id] ? "expanded" : "clamped"
-  }`}
->
-  {service.description}
-</p>
-
-{service.description.length > 120 && (
-  <button
-    className="see-more-btn"
-    onClick={() => toggleDescription(service.id)}
-  >
-    {expandedDescriptions[service.id] ? "See less" : "See more"}
-  </button>
-)}
-
-
-  {service.location && (
-    <div className="service-location">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M12 21s-6-5.33-6-10a6 6 0 0 1 12 0c0 4.67-6 10-6 10z" />
-        <circle cx="12" cy="11" r="2" />
-      </svg>
-
-      <span>{service.location}</span>
-    </div>
-  )}
-</div>
-
-
-        {/* ===== ACTION BAR (BOTTOM, OUTSIDE CARD) ===== */}
-        <div className="service-actions">
-<button
-  className={`action-btn ${service.liked_by_me ? "liked" : ""}`}
-  onClick={() => toggleLike(service.id, service.liked_by_me)}
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill={service.liked_by_me ? "currentColor" : "none"}
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M7 10v12" />
-    <path d="M15 3l-4 7v12h5.5a2 2 0 0 0 2-1.5l1.5-7a2 2 0 0 0-2-2.5h-6" />
-  </svg>
-
-  <span className="like-count">{service.like_count}</span>
-</button>
-
-
-
- <button
-  className="action-btn"
-  onClick={() => {
-    setActiveServiceId(service.id);
-    setCommentsOpen(true);
-  }}
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    style={{ marginRight: 6 }}
-  >
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-  </svg>
-  Comment
-</button>
-
-
-
-<button
-  className="action-btn primary"
-  onClick={() =>
-    service.owner_id &&
-    router.push(`/messages?user=${service.owner_id}`)
-  }
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    style={{ marginRight: 6 }}
-  >
-    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-    <polyline points="22,6 12,13 2,6" />
-  </svg>
-  Message
-</button>
-
-        </div>
-
-      </div>
-    );
-  })
 ) : (
-  posts.map(post => (
-              <div key={post.id} className="card post-card">
-                <div className="post-header">
-                  <span className="pro-badge">PRO</span>
-                  {post.is_contract && <span className="contract-tag">CONTRACT</span>}
-                </div>
-                {post.image_url && <img src={post.image_url} alt="Site" className="site-img" />}
-                <p className="post-content">{post.content}</p>
-                <div className="location-row">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                  <span>{post.location_name}</span>
-                </div>
-                <div className="card-footer">
-                  <button className="btn-collab">Exchange Ideas</button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+  <div className="content-grid">
+    {/* We only render services here now */}
+    {services.map((service) => {
+      const owner = service.profiles;
 
+      return (
+        <div key={service.id} className="service-wrapper">
+          {/* USER HEADER */}
+          <div className="author-row">
+            {owner?.avatar_url ? (
+              <img src={owner.avatar_url} alt={owner.full_name} className="author-avatar" />
+            ) : (
+              <div className="author-avatar placeholder">
+                {owner?.full_name?.[0]?.toUpperCase() || "🧑"}
+              </div>
+            )}
+            <div className="author-meta">
+              <span className="author-name">{owner?.full_name || "Unknown User"}</span>
+              <span className="author-category">{service.category}</span>
+            </div>
+          </div>
+
+          {/* SERVICE CARD */}
+          <div className="card service-card">
+            <h3 className="service-title">{service.title}</h3>
+            <p className={`card-desc ${expandedDescriptions[service.id] ? "expanded" : "clamped"}`}>
+              {service.description}
+            </p>
+            {service.description.length > 120 && (
+              <button className="see-more-btn" onClick={() => toggleDescription(service.id)}>
+                {expandedDescriptions[service.id] ? "See less" : "See more"}
+              </button>
+            )}
+            {service.location && (
+              <div className="service-location">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s-6-5.33-6-10a6 6 0 0 1 12 0c0 4.67-6 10-6 10z" /><circle cx="12" cy="11" r="2" /></svg>
+                <span>{service.location}</span>
+              </div>
+            )}
+          </div>
+
+          {/* ACTION BAR */}
+          <div className="service-actions">
+            <button className={`action-btn ${service.liked_by_me ? "liked" : ""}`} onClick={() => toggleLike(service.id, service.liked_by_me)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill={service.liked_by_me ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M7 10v12" /><path d="M15 3l-4 7v12h5.5a2 2 0 0 0 2-1.5l1.5-7a2 2 0 0 0-2-2.5h-6" /></svg>
+              <span className="like-count">{service.like_count}</span>
+            </button>
+
+            <button className="action-btn" onClick={() => { setActiveServiceId(service.id); setCommentsOpen(true); }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              <span>Comment</span>
+            </button>
+
+            <button className="action-btn primary" onClick={() => service.owner_id && router.push(`/messages?user=${service.owner_id}`)}>
+              Message
+            </button>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
 {commentsOpen && (
   <div className="modal-overlay" onClick={() => setCommentsOpen(false)}>
     <div
