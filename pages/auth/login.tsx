@@ -62,12 +62,14 @@ export default function Login() {
           Don’t have an account?{" "}
           <span onClick={() => router.push("/auth/register")}>Register</span>
         </p>
-      </div>
 
-      {/* About Us link outside the card */}
+             
       <p className="about-link">
         <span onClick={() => router.push("/about")}>About Us</span>
       </p>
+      </div>
+
+
 
       <style jsx>{`
         .page {
@@ -78,7 +80,7 @@ export default function Login() {
           align-items: center;
           gap: 20px; /* space between card and About Us */
           padding: 20px;
-          background: linear-gradient(135deg, #1e3a8a, #2563eb);
+          background: linear-gradient(135deg, #1f1f21ff, #151617ff);
         }
         .card {
           background: white;
@@ -97,7 +99,7 @@ export default function Login() {
           font-size: 28px;
           font-weight: bold;
           margin-bottom: 25px;
-          color: #1e3a8a;
+          color: #121213ff;
         }
         .form {
           display: flex;
@@ -107,17 +109,17 @@ export default function Login() {
         input {
           padding: 12px 15px;
           border-radius: 10px;
-          border: 1px solid #ccc;
+          border: 1px solid #121212ff;
           font-size: 16px;
           outline: none;
           transition: border 0.2s, box-shadow 0.2s;
         }
         input:focus {
-          border-color: #2563eb;
-          box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+          border-color: #161717ff;
+          box-shadow: 0 0 8px rgba(21, 21, 21, 0.4);
         }
         button {
-          background: #2563eb;
+          background: #0c0c0cff;
           color: white;
           font-weight: bold;
           padding: 12px;
@@ -128,16 +130,16 @@ export default function Login() {
           transition: background 0.2s, transform 0.2s;
         }
         button:hover {
-          background: #1d4ed8;
+          background: #0b0b0bff;
           transform: translateY(-2px);
         }
         .register {
           margin-top: 20px;
           font-size: 14px;
-          color: #1e3a8a;
+          color: #212020ff;
         }
         .register span {
-          color: #2563eb;
+          color: #141313ff;
           font-weight: bold;
           cursor: pointer;
         }
@@ -147,7 +149,7 @@ export default function Login() {
         .about-link {
           font-size: 16px;
           font-weight: bold;
-          color: #2563eb;
+          color: #0d0d0eff;
           cursor: pointer;
         }
         .about-link span:hover {

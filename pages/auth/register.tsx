@@ -96,7 +96,7 @@ export default function Register() {
           display: flex;
           justify-content: center;
           align-items: center;
-          background: linear-gradient(135deg, #1e3a8a, #2563eb);
+          background: linear-gradient(135deg, #1b1c1fff, #202022ff);
           padding: 20px;
         }
         .card {
@@ -116,7 +116,7 @@ export default function Register() {
           font-size: 28px;
           font-weight: bold;
           margin-bottom: 25px;
-          color: #1e3a8a;
+          color: #090a0aff;
         }
         .form {
           display: flex;
@@ -127,18 +127,18 @@ export default function Register() {
         select {
           padding: 12px 15px;
           border-radius: 10px;
-          border: 1px solid #ccc;
+          border: 1px solid #100f0fff;
           font-size: 16px;
           outline: none;
           transition: border 0.2s, box-shadow 0.2s;
         }
         input:focus,
         select:focus {
-          border-color: #2563eb;
-          box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+          border-color: #131414ff;
+          box-shadow: 0 0 8px rgba(16, 17, 19, 0.4);
         }
         button {
-          background: #2563eb;
+          background: #181819ff;
           color: white;
           font-weight: bold;
           padding: 12px;
@@ -149,16 +149,16 @@ export default function Register() {
           transition: background 0.2s, transform 0.2s;
         }
         button:hover {
-          background: #1d4ed8;
+          background: #1d1d1fff;
           transform: translateY(-2px);
         }
         .login-link {
           margin-top: 20px;
           font-size: 14px;
-          color: #1e3a8a;
+          color: #101011ff;
         }
         .login-link span {
-          color: #2563eb;
+          color: #0a0a0bff;
           font-weight: bold;
           cursor: pointer;
         }
@@ -170,7 +170,7 @@ export default function Register() {
           font-size: 14px;
         }
         .about-link span {
-          color: #2563eb;
+          color: #121213ff;
           font-weight: bold;
           cursor: pointer;
         }
