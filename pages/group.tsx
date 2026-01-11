@@ -244,6 +244,23 @@ const handleCreateGroup = async (e: React.FormEvent) => {
 };
   return (
     <div className="container">
+
+{/* Mobile App Bar */}
+<div className="app-bar">
+  <button className="appbar-btn" onClick={() => router.push("/")}>
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M19 12H5M12 19l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div className="appbar-title">Community Hub</div>
+
+  <button className="appbar-btn primary" onClick={() => setShowCreateModal(true)}>
+    +
+  </button>
+</div>
+
+
       <header className="header">
         <div className="header-left">
 <button onClick={() => router.push("/")} className="back-btn">
@@ -454,6 +471,56 @@ const handleCreateGroup = async (e: React.FormEvent) => {
 
       <style jsx>{`
 
+      * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+.app-bar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 12px 0;
+
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+
+  align-items: center;
+  justify-content: space-between;
+}
+
+.appbar-title {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.appbar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #1e293b;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.appbar-btn.primary {
+  background: #3b82f6;
+}
+
+
       .avatar-upload {
   display: flex;
   flex-direction: column;
@@ -555,7 +622,7 @@ const handleCreateGroup = async (e: React.FormEvent) => {
         .header-left { display: flex; align-items: center; gap: 12px; }
         .back-btn { background: #1e293b; border: none; color: #94a3b8; padding: 8px; border-radius: 8px; cursor: pointer; }
         .create-btn { background: #3b82f6; border: none; color: white; padding: 10px 16px; border-radius: 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .search-input { width: 97%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: white; margin-bottom: 20px; }
+        .search-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: white; margin-bottom: 20px; overflow: hidden; text-overflow: ellipsis; }
 
         .groups-grid { 
   display: grid; 
@@ -604,6 +671,42 @@ const handleCreateGroup = async (e: React.FormEvent) => {
         .loader { text-align: center; padding: 50px; }
         .spinner { border: 3px solid #334155; border-top: 3px solid #3b82f6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+
+  /* Show app bar */
+  .app-bar {
+    display: flex;
+  }
+
+  /* Hide desktop header */
+  .header {
+    display: none;
+  }
+
+  /* Push content BELOW app bar */
+  .container {
+    padding-top: calc(56px + env(safe-area-inset-top) + 12px);
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: 12px;
+  }
+
+  /* Inputs must never exceed screen */
+  .search-input {
+    width: 100%;
+  }
+
+  /* Grid safe sizing */
+  .groups-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .group-card {
+    width: 100%;
+  }
+}
+
       `}</style>
     </div>
   );

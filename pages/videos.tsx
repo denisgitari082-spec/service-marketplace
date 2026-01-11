@@ -1489,6 +1489,7 @@ useEffect(() => {
   border: 1px solid #334155;
   border-radius: 999px;
   padding: 6px 12px;
+   max-width: calc(100vw - 80px);
   width: 220px;
 }
 
@@ -1950,12 +1951,21 @@ reply-item { margin-left: 30px; margin-top: 8px; font-size: 0.85rem; color: #94a
   font-size: 24px;
   cursor: pointer;
 }
+  * {
+  min-width: 0;
+}
+
+html, body {
+  overflow-x: hidden;
+}
 
 textarea {
-  width: 95%;
+  width: 100%;
   background: transparent;
   border: none;
   color: white;
+  overflow: hidden;
+   box-sizing: border-box;
   font-size: 1.1rem;
   resize: none;
   outline: none;
@@ -2141,8 +2151,10 @@ textarea {
 
 
 .container {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
+    max-width: 100%;
+  overflow-x: hidden;
   margin: 0;
   color: white;
   padding: 0px; /* optional, small breathing room */
@@ -2163,15 +2175,25 @@ html, body, #__next {
 }
 
         
-        /* HEADER */
-        .header-nav { 
-          display: flex; 
-          justify-content: space-between; 
-          align-items: center; 
-          margin-bottom: 25px; 
-          padding-bottom: 15px;
-          border-bottom: 1px solid #1e293b;
-        }
+.header-nav {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 1000;
+   overflow-x: hidden;
+
+  padding-top: calc(env(safe-area-inset-top) + 8px);
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 12px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: #000;
+  border-bottom: 1px solid #1e293b;
+}
+
         
     
         

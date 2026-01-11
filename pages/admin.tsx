@@ -400,6 +400,35 @@ const handleSendMessage = async (e: React.FormEvent) => {
 )}
 
       <main className="chat-area">
+{/* Mobile App Bar */}
+<div className="mobile-app-bar">
+  <button
+    className="appbar-btn"
+    onClick={() => router.push("/group")}
+    aria-label="Back"
+  >
+    ←
+  </button>
+
+  <div className="appbar-center">
+    <h1 className="appbar-title">
+      {group?.name || "Group"}
+    </h1>
+    <span className="appbar-sub">
+      {members.length} members
+    </span>
+  </div>
+
+  <button
+    className="appbar-btn"
+    onClick={() => setShowMembers(true)}
+    aria-label="Members"
+  >
+    👥
+  </button>
+</div>
+
+
 <header className="chat-header">
   {/* LEFT SIDE: Avatar and Name */}
   <div className="header-left">
@@ -676,6 +705,106 @@ const handleSendMessage = async (e: React.FormEvent) => {
       </main>
 
       <style jsx>{`
+      @media (max-width: 768px) {
+
+  /* Show mobile app bar */
+  .mobile-app-bar {
+    display: flex;
+  }
+
+  /* Hide desktop header */
+  .chat-header {
+    display: none;
+  }
+
+  /* Push content BELOW app bar */
+  .chat-area {
+    padding-top: calc(56px + env(safe-area-inset-top));
+  }
+
+  /* Feed padding reduced to avoid overflow */
+  .feed {
+    padding: 12px;
+  }
+
+  /* Prevent bubble overflow */
+  .post-bubble {
+    max-width: 85%;
+  }
+
+  /* Images & videos never exceed screen */
+  .chat-image,
+  .chat-video {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Sidebar must not cause horizontal scroll */
+  .sidebar {
+    max-width: 85vw;
+  }
+}
+
+
+      * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+.mobile-app-bar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 12px 0;
+
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+
+  align-items: center;
+  justify-content: space-between;
+}
+
+.appbar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #334155;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.appbar-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.appbar-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.appbar-sub {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
       .spinner {
   width: 18px;
   height: 18px;
@@ -851,12 +980,12 @@ const handleSendMessage = async (e: React.FormEvent) => {
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 12px;
-  width: fit-content;
+   max-width: 100%;
   max-width: 300px;
 }
 .chat-container { 
     display: flex; 
-    height: 100vh; 
+    height: 100dvh; 
     background: #0e1d20ff; 
     color: white; 
     position: relative; 
@@ -1113,7 +1242,8 @@ const handleSendMessage = async (e: React.FormEvent) => {
 .call-bubble {
   background: #1e293b !important;
   border: 1px solid #334155 !important;
-  min-width: 250px;
+  min-width: unset;
+  max-width: 100%;
   border-left: 4px solid #3b82f6 !important; /* Visual indicator for active call */
 }
 

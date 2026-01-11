@@ -364,19 +364,20 @@ const fetchPosts = async () => {
 
   return (
     <div className="profile-page">
+<div className="app-bar">
+  <button
+    className="back-btn"
+    onClick={() => router.push("/")}
+    aria-label="Go back"
+  >
+    ←
+  </button>
+
+  <span className="app-bar-title">Profile</span>
+</div>
+
       {/* HEADER */}
       <div className="profile-header">
-
-<button
-  className="back-btn"
-  onClick={() => router.push("/")}
-  aria-label="Go back"
->
-  ←
-</button>
-
-
-
         <div className="avatar-section">
           {profile.avatar_url ? (
             <img src={profile.avatar_url} className="profile-avatar" />
@@ -512,6 +513,34 @@ const fetchPosts = async () => {
 
 
 <style>{`
+html,
+body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+
+.app-bar {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 1000;
+
+  height: 56px;
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  background: black;
+  border-bottom: 1px solid #222;
+}
+
+.app-bar-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
 
 /* Fullscreen loader wrapper */
 .loader-container {
@@ -649,12 +678,26 @@ const fetchPosts = async () => {
 /* ========== PAGE WRAPPER ========== */
 .profile-page {
   width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  margin: 0px;
   min-height: 100vh;
-  padding: 16px 20px 64px;
+  padding: 10px 10px 10px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #f0ebebff;
   background: black;
 }
+  video,
+img {
+  max-width: 100%;
+  height: auto;
+}
+* {
+  min-width: 0;
+}
+
+
+
 .profile-header {
   width: 100%;
    padding: 16px 0 24px;

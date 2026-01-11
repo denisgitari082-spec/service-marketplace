@@ -724,6 +724,27 @@ return (
     {/* ... rest of the chat window ... */}
     {/* Chat Window Section */}
     <div className="chat-window">
+
+
+{/* App Bar (Mobile Safe) */}
+<div className="app-bar">
+  <button
+    className="appbar-back"
+    onClick={() => setSelectedTarget(null)}
+  >
+    ←
+  </button>
+
+  <div className="appbar-title">
+    {selectedTarget
+      ? ("full_name" in selectedTarget
+          ? selectedTarget.full_name || selectedTarget.email
+          : selectedTarget.name)
+      : "Messages"}
+  </div>
+</div>
+
+
       {selectedTarget ? (
         <>
           <div className="chat-header">
@@ -861,6 +882,95 @@ return (
       </div>
 
       <style jsx>{`
+
+      @media (max-width: 768px) {
+  .messenger-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Hide sidebar when chat is open */
+  .sidebar {
+    display: none;
+  }
+
+  /* Show App Bar */
+  .app-bar {
+    display: flex;
+  }
+
+  /* Prevent header duplication */
+  .chat-header {
+    display: none;
+  }
+
+  .chat-window {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .message-list {
+    padding: 16px;
+  }
+
+  .input-area {
+    padding: 10px;
+  }
+
+  .msg-bubble {
+    max-width: 85%;
+  }
+}
+
+
+      /* ===== GLOBAL LAYOUT FIXES ===== */
+* {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* ===== APP BAR ===== */
+.app-bar {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 1000;
+
+  height: 56px;
+  padding-top: env(safe-area-inset-top);
+  padding-left: 12px;
+  padding-right: 12px;
+
+  display: none; /* desktop hidden */
+  align-items: center;
+  gap: 12px;
+
+  background: #020617;
+  border-bottom: 1px solid #1e293b;
+}
+
+.appbar-back {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.appbar-title {
+  font-weight: 600;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
         .messenger-container { display: flex; height: 100vh; background: #0f172a; color: white; }
         .sidebar { width: 350px; border-right: 1px solid #1e293b; display: flex; flex-direction: column; background: #020617; }
         .sidebar-header { background: #0f172a; border-bottom: 1px solid #1e293b; }
@@ -907,6 +1017,15 @@ return (
   padding: 12px;
   border-bottom: 1px solid #1e293b;
 }
+  .chat-img,
+.chat-video,
+.chat-audio {
+  max-width: 100%;
+}
+.search-box input {
+  width: 100%;
+}
+
 
 .nav-home-btn {
   display: flex;
