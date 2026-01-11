@@ -72,26 +72,58 @@ export default function Login() {
 
 
       <style jsx>{`
-        .page {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          gap: 20px; /* space between card and About Us */
-          padding: 20px;
-          background: linear-gradient(135deg, #1f1f21ff, #151617ff);
-        }
-        .card {
-          background: white;
-          padding: 40px 30px;
-          border-radius: 16px;
-          max-width: 400px;
-          width: 100%;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-          text-align: center;
-          transition: transform 0.3s;
-        }
+
+
+* {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+.page {
+  height: 100dvh; /* mobile-safe viewport */
+  width: 100vw;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  gap: 20px;
+  padding: 0; /* 🔥 removes outer margin feel */
+
+  background: linear-gradient(135deg, #1f1f21ff, #151617ff);
+}
+
+.card {
+  background: white;
+  padding: 40px 30px;
+  border-radius: 16px;
+
+  width: 100%;
+  max-width: 400px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+@media (max-width: 480px) {
+  .card {
+    border-radius: 0;
+    max-width: 100%;
+    height: 100%;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
         .card:hover {
           transform: translateY(-5px);
         }
