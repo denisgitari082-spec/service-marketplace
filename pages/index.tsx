@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../src/lib/supabaseClient";
-import { StatusBar, Style } from "@capacitor/status-bar";
-import { Capacitor } from "@capacitor/core";
+
 
 
 
@@ -57,13 +56,7 @@ const [comments, setComments] = useState<Comment[]>([]);
 const [newComment, setNewComment] = useState("");
 const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
-useEffect(() => {
-  if (Capacitor.isNativePlatform()) {
-    StatusBar.setOverlaysWebView({ overlay: true });
-    StatusBar.setStyle({ style: Style.Dark });
-    StatusBar.setBackgroundColor({ color: "#0f172a" });
-  }
-}, []);
+
 
   useEffect(() => {
     const init = async () => {
