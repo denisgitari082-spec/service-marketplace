@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../src/lib/supabaseClient";
 
+
 // 1. Update Type
 type Group = {
   id: string;
@@ -617,7 +618,9 @@ html, body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-        .container { background: #0f172a; min-height: 100vh; color: white; padding: 20px; font-family: sans-serif; }
+        .container { background: #0f172a; margin-top:20px; min-height: 100vh; color: white; padding: 20px; font-family: sans-serif;  margin-bottom: 0px;
+  margin-left: 0px;
+  margin-right: 0px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .header-left { display: flex; align-items: center; gap: 12px; }
         .back-btn { background: #1e293b; border: none; color: #94a3b8; padding: 8px; border-radius: 8px; cursor: pointer; }
@@ -688,6 +691,10 @@ html, body {
   .container {
     padding-top: calc(56px + env(safe-area-inset-top) + 12px);
     padding-left: 12px;
+      margin-bottom: 0px;
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-top: 0px;
     padding-right: 12px;
     padding-bottom: 12px;
   }

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../src/lib/supabaseClient";
 
+
 export default function GroupAdminPage() {
   const router = useRouter();
   const { id } = router.query; // Get ID from query string

@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../src/lib/supabaseClient";
+import { StatusBar, Style } from "@capacitor/status-bar";
+import { Capacitor } from "@capacitor/core";
+
 
 /* ---------------- TYPES ---------------- */
 
@@ -64,7 +67,13 @@ export default function UserProfilePage() {
 
   const isMyProfile = loggedInUserId === profileId;
 
-
+useEffect(() => {
+  if (Capacitor.isNativePlatform()) {
+    StatusBar.setOverlaysWebView({ overlay: true });
+    StatusBar.setStyle({ style: Style.Dark });
+    StatusBar.setBackgroundColor({ color: "#0f172a" });
+  }
+}, []);
 
 
 

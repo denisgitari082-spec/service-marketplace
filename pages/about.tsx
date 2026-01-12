@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 
+
 export default function AboutPage() {
   const router = useRouter();
    const searchParams = useSearchParams();

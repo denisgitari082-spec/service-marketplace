@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "../src/lib/supabaseClient";
 
+
 type VideoPost = {
   id: string;
   content: string;
@@ -2155,9 +2156,16 @@ textarea {
   min-height: 100vh;
     max-width: 100%;
   overflow-x: hidden;
-  margin: 0;
+  margin-top: 0px;
+    margin-bottom: 0px;
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  margin-left: 0px;
+  margin-right: 0px;
   color: white;
-  padding: 0px; /* optional, small breathing room */
+  padding-left: 5px;
+  padding-right: 5px;
   background-color: #000;
   box-sizing: border-box;
 }

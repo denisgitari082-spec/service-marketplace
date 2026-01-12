@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../src/lib/supabaseClient";
+import { StatusBar, Style } from "@capacitor/status-bar";
+import { Capacitor } from "@capacitor/core";
+
 
 
 
@@ -54,7 +57,13 @@ const [comments, setComments] = useState<Comment[]>([]);
 const [newComment, setNewComment] = useState("");
 const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
-
+useEffect(() => {
+  if (Capacitor.isNativePlatform()) {
+    StatusBar.setOverlaysWebView({ overlay: true });
+    StatusBar.setStyle({ style: Style.Dark });
+    StatusBar.setBackgroundColor({ color: "#0f172a" });
+  }
+}, []);
 
   useEffect(() => {
     const init = async () => {
@@ -286,6 +295,8 @@ const fetchData = async () => {
  
 
 console.log("SERVICE FROM SUPABASE:", data?.[0]);
+console.log(navigator.userAgent);
+
 
       if (!error && data) {
         const typedServices = data.map((service: any) => ({
@@ -640,6 +651,35 @@ return (
 
 
       <style jsx>{`
+
+      *,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+img, svg {
+  max-width: 100%;
+}
+.author-avatar,
+.comment-avatar,
+.profile-img {
+  flex-shrink: 0;
+}
+ .top-bar,
+.header,
+.action-bar {
+  padding-top: calc(var(--status-bar-height) + 8px);
+}
+
+body {
+  padding-top: var(--status-bar-height);
+}
+
+
       /* ===== COMMENTS MODAL ===== */
 .comments-modal {
   width: 100%;
@@ -672,12 +712,14 @@ return (
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .card-desc.expanded {
   display: block;
 }
   .card {
+  width: 100%;
   min-width: 0;
 }
   .card-desc {
@@ -705,7 +747,7 @@ return (
 }
 
   .action-btn.liked {
-  color: #2563eb; /* blue */
+  color: #0e0e0eff; /* blue */
 }
   .service-location {
   display: flex;
@@ -713,7 +755,7 @@ return (
   gap: 6px;
   margin-top: 8px;
   font-size: 0.9rem;
-  color: #6b7280; /* subtle gray */
+  color: #ebedf1ff; /* subtle gray */
 }
 
 .service-location svg {
@@ -735,6 +777,7 @@ return (
     .action-btn primary {
   display: inline-flex;
   align-items: center;
+  border: white;
   justify-content: center;
   gap: 6px;
 }
@@ -816,10 +859,11 @@ return (
 .send-btn {
   width: 42px;
   height: 42px;
-  background: #3b82f6;
-  border: none;
+  background: #0c0c0cff;
+  border: white;
   border-radius: 10px;
   color: white;
+  border: 1px solid #e5e8ecff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -827,7 +871,9 @@ return (
 }
 
 .send-btn:hover {
-  background: #2563eb;
+  background: #0f0f0fff;
+  color: white;
+  border: 1px solid #eff2f5ff;
 }
 
 
@@ -854,7 +900,8 @@ return (
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  background: #334155;
+  border: 1px solid #304e77ff;
+  background: #070707ff;
 }
 
 .comment-input {
@@ -866,15 +913,15 @@ return (
   flex: 1;
   padding: 10px;
   border-radius: 8px;
-  background: #0f172a;
+  background: #0a0a0aff;
   border: 1px solid #334155;
   color: white;
 }
 
       .action-btn.liked {
-  background: #1d4ed8;
+  background: #0b0b0bff;
   color: white;
-  border-color: #2563eb;
+  border-color: #f9f9f9ff;
 }
 
 .like-count {
@@ -889,18 +936,14 @@ return (
   gap: 12px;
   margin-bottom: 12px;
 }
-  .service-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+
   .service-wrapper {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding-bottom: 20px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #334155; /* 👈 separator line */
+  border-bottom: 1px solid #eef0f2ff; /* 👈 separator line */
 }
 
 
@@ -912,15 +955,16 @@ return (
   height: 42px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #334155;
+  border: 2px solid #ced5ddff;
 }
 
 .service-avatar.placeholder {
   display: flex;
   align-items: center;
+  border: 1px solid #436da8ff;
   justify-content: center;
-  background: #1e293b;
-  color: #3b82f6;
+  background: #131313ff;
+  color: #e4e6e8ff;
   font-weight: 700;
 }
 
@@ -935,7 +979,7 @@ return (
 }
 
 .service-category {
-  color: #94a3b8;
+  color: #eef0f4ff;
   font-size: 12px;
 }
 
@@ -956,8 +1000,9 @@ return (
   width: 42px;
   height: 42px;
   border-radius: 50%;
+  border: 1px solid #d4dae2ff;
   object-fit: cover;
-  background: #334155;
+  background: #0e0e0eff;
 }
 
 .author-avatar.placeholder {
@@ -965,24 +1010,35 @@ return (
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  border: 1px solid #d0d5dcff;
   color: #3b82f6;
 }
 
 .author-meta {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* This stacks them vertically */
+  align-items: flex-start; /* Aligns both to the left */
+  justify-content: center;
+  min-width: 0;           /* Crucial: allows children to truncate */
+  flex: 1;                /* Takes up remaining space in the row */
 }
 
 .author-name {
   font-weight: 700;
   font-size: 0.95rem;
+  line-height: 1.2;
+  /* Prevent horizontal overflow */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .author-category {
   font-size: 0.75rem;
   color: #94a3b8;
+  margin-top: 2px; /* Small gap between name and category */
 }
-
 .service-title {
   font-size: 1.1rem;
   margin: 6px 0;
@@ -991,13 +1047,30 @@ return (
 .service-actions {
   display: flex;
   gap: 8px;
-  margin-top: auto;
+  width: 100%;
+}
+  .service-wrapper,
+.card,
+.author-row,
+.service-actions {
+  min-width: 0;
+}
+.service-title,
+.author-name,
+.service-location span {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
+
 .action-btn {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;          /* 🔥 REQUIRED */
+  padding: 8px;
+  white-space: nowrap;
   background: #0f172a;
-  border: 1px solid #334155;
+  border: 1px solid #d2d8dfff;
   color: #cbd5e1;
   padding: 8px;
   border-radius: 10px;
@@ -1006,8 +1079,8 @@ return (
 }
 
 .action-btn.primary {
-  background: #3b82f6;
-  border: none;
+  background: #080808ff;
+ border: 1px solid #d9e0ebff;
   color: white;
 }
   :root {
@@ -1018,14 +1091,20 @@ return (
 
 
         .container {
-  background: #0f172a;
+  background: #0b0b0bff;
   min-height: 100vh;
   color: white;
+ 
+  width: 100%;
+  flex-wrap: wrap;
 
-  padding-left: 12px;
-  padding-right: 12px;
-  padding-bottom: calc(12px + var(--safe-bottom));
-  padding-top: calc(12px + var(--safe-top));
+padding-left: 5px;
+padding-right: 5px;
+  margin-bottom: 0px;
+  margin-left: 0px;
+  margin-right: 0px;
+
+  margin-top: 0px;
 
   font-family: sans-serif;
 }
@@ -1036,7 +1115,7 @@ return (
   top: var(--safe-top);
   z-index: 1000;
 
-  background: #0f172a;
+  background: #111111ff;
   padding: 12px 4px;
 
   display: flex;
@@ -1044,26 +1123,27 @@ return (
   align-items: center;
 
   gap: 10px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid #e3e5e9ff;
 }
 
         .logo { font-size: 1.4rem; font-weight: 800; background: linear-gradient(90deg, #3b82f6, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         
         .view-toggle { background: #1e293b; padding: 4px; border-radius: 12px; display: flex; }
         .view-toggle button { background: none; border: none; color: #94a3b8; padding: 8px 14px; cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
-        .view-toggle button.active { background: #3b82f6; color: white; }
+        .view-toggle button.active { background: #0a0a0aff; color: white; }
         
         .header-actions { display: flex; gap: 10px; align-items: center; }
         .header-btn, .msg-icon-container { position: relative; color: #94a3b8; padding: 10px; background: #1e293b; border-radius: 12px; display: flex; transition: 0.2s; }
-        .header-btn:hover, .msg-icon-container:hover { color: #3b82f6; background: #334155; }
+        .header-btn:hover, .msg-icon-container:hover { color: #e5e7ebff; background: #334155; }
         
         .badge { position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; font-size: 10px; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #0f172a; }
 .action-bar {
   display: flex;
   align-items: center;
   gap: 12px;
+  overflow-x: hidden;
 
   width: 100%;
   margin: 0 0 16px 0; /* ❌ no auto margins */
@@ -1075,6 +1155,16 @@ return (
   grid-template-columns: 1fr;
   gap: 16px;
 }
+  :root {
+  --status-bar-height: 24px;
+}
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  :root {
+    --status-bar-height: env(safe-area-inset-top);
+  }
+}
+
 
 
         .search-wrapper {
@@ -1083,7 +1173,7 @@ return (
   min-width: 0;        /* allow shrinking */
 }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
-        .search-box { width: 70%; padding: 12px 12px 12px 40px; border-radius: 12px; border: 1px solid #334155; background: #1e293b; color: white; outline: none; }
+        .search-box { width: 100%; padding: 12px 12px 12px 40px; border-radius: 12px; border: 1px solid #edf0f4ff; background: #111112ff; color: white; outline: none; }
        
 :global(a.add-btn) {
   display: inline-flex;
@@ -1093,8 +1183,9 @@ return (
   height: 42px;
   padding: 0 16px;
 
-  background: #2a4f3fff;
+  background: #0c0c0cff;
   color: white;
+border: 1px solid #f7f9fcff;
 
   border-radius: 12px;
   font-weight: 600;
@@ -1104,7 +1195,9 @@ return (
 
 
   .add-btn:hover {
-  background: #25eb43ff;
+  background: #101010ff;
+  color: white;
+  border: 1px solid #f7f8f9ff;
 }
 
 .add-btn:active {
@@ -1125,7 +1218,7 @@ return (
 
 
       
-        .card { background: #1e293b; border-radius: 20px; padding: 20px; border: 1px solid #334155; display: flex; flex-direction: column; }
+        .card { background: #080808ff; border-radius: 20px; padding: 20px; border: 1px solid #334155; display: flex; flex-direction: column; }
         .card-desc { color: #cbd5e1; line-height: 1.5; margin-bottom: 20px; }
         .tag { background: rgba(59, 130, 246, 0.1); color: #60a5fa; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
         
@@ -1133,8 +1226,8 @@ return (
         .location-row { display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 13px; margin: 10px 0; }
         .card-footer { display: flex; gap: 10px; margin-top: auto; }
         .btn-wa { background: #22c55e; flex: 1; text-align: center; padding: 10px; border-radius: 10px; text-decoration: none; color: white; font-weight: 600; }
-        .btn-msg { background: #3b82f6; flex: 1; border: none; color: white; border-radius: 10px; cursor: pointer; font-weight: 600; }
-        .btn-collab { width: 100%; background: #6366f1; border: none; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .btn-msg { background: #0d0d0eff; flex: 1; border: none; color: white; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .btn-collab { width: 100%; background: #050505ff; border: none; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; }
 
         .loader-container { text-align: center; padding: 50px; }
         .spinner { width: 30px; height: 30px; border: 3px solid #334155; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 15px; }
@@ -1155,9 +1248,9 @@ return (
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
-  border: 2px solid #334155;
+  border: 2px solid #e9ecf0ff;
   transition: all 0.2s ease;
-  background: #1e293b;
+  background: #797e87ff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1177,6 +1270,7 @@ return (
 .profile-placeholder {
   font-weight: 700;
   color: #3b82f6;
+  background: #eae8e8ff;
   font-size: 1.1rem;
 }
 
@@ -1232,7 +1326,7 @@ return (
   width: 100%;
   padding: 10px;
   background: #0f172a;
-  border: 1px solid #334155;
+  border: 1px solid #c1c6ccff;
   border-radius: 8px;
   color: white;
   outline: none;
@@ -1241,9 +1335,9 @@ return (
 .save-btn {
   width: 100%;
   padding: 12px;
-  background: #3b82f6;
+  background: #0b0b0bff;
   color: white;
-  border: none;
+  border: white;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -1254,6 +1348,48 @@ return (
   opacity: 0.6;
   cursor: not-allowed;
 }
+  /* === HORIZONTAL SCROLL FIX PACK === */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img, svg {
+  max-width: 100%;
+}
+
+.action-bar {
+  overflow-x: hidden;
+}
+
+.search-wrapper {
+  min-width: 0;
+}
+
+.search-box {
+  width: 100%;
+  max-width: 100%;
+}
+
+.author-avatar,
+.comment-avatar,
+.profile-img {
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  .add-btn span {
+    display: none;
+  }
+}
+
       `}</style>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../src/lib/supabaseClient";
 
+
 export default function AddEditService() {
   const router = useRouter();
   const searchParams = useSearchParams();
