@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../src/lib/supabaseClient";
 import { useRouter } from "next/router";
 
+
+
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -90,6 +92,7 @@ body {
 .page {
   height: 100dvh; /* mobile-safe viewport */
   width: 100vw;
+  background-color: white;
 
   display: flex;
   flex-direction: column;
@@ -99,11 +102,11 @@ body {
   gap: 20px;
   padding: 0; /* 🔥 removes outer margin feel */
 
-  background: linear-gradient(135deg, #1f1f21ff, #151617ff);
+ 
 }
 
 .card {
-  background: white;
+  background: black;
   padding: 40px 30px;
   border-radius: 16px;
 
@@ -131,7 +134,7 @@ body {
           font-size: 28px;
           font-weight: bold;
           margin-bottom: 25px;
-          color: #121213ff;
+          color: rgb(247, 247, 249);
         }
         .form {
           display: flex;
@@ -147,12 +150,12 @@ body {
           transition: border 0.2s, box-shadow 0.2s;
         }
         input:focus {
-          border-color: #161717ff;
+          border-color: rgb(10, 236, 236);
           box-shadow: 0 0 8px rgba(21, 21, 21, 0.4);
         }
         button {
-          background: #0c0c0cff;
-          color: white;
+          background: rgb(249, 247, 247);
+          color: black;
           font-weight: bold;
           padding: 12px;
           border: none;
@@ -162,16 +165,16 @@ body {
           transition: background 0.2s, transform 0.2s;
         }
         button:hover {
-          background: #0b0b0bff;
+          background: rgb(248, 247, 247);
           transform: translateY(-2px);
         }
         .register {
           margin-top: 20px;
           font-size: 14px;
-          color: #212020ff;
+          color: rgb(253, 247, 247);
         }
         .register span {
-          color: #141313ff;
+          color: rgb(248, 245, 245);
           font-weight: bold;
           cursor: pointer;
         }
@@ -181,7 +184,7 @@ body {
         .about-link {
           font-size: 16px;
           font-weight: bold;
-          color: #0d0d0eff;
+          color: rgb(248, 248, 251);
           cursor: pointer;
         }
         .about-link span:hover {

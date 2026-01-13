@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "../../src/lib/supabaseClient";
 import { useRouter } from "next/router";
 
+
 export default function Register() {
   const router = useRouter();
 
@@ -118,14 +119,15 @@ body {
   gap: 20px;
   padding: 0; /* 🔥 removes outer margin feel */
 
-  background: linear-gradient(135deg, #1f1f21ff, #151617ff);
+background-color: white;
 }
 
 
 .card {
-  background: white;
+  background: black;
   padding: 40px 30px;
   border-radius: 16px;
+  color: white;
 
   width: 100%;
   max-width: 400px;
@@ -151,7 +153,7 @@ body {
           font-size: 28px;
           font-weight: bold;
           margin-bottom: 25px;
-          color: #090a0aff;
+          color: rgb(248, 252, 252);
         }
         .form {
           display: flex;
@@ -162,19 +164,19 @@ body {
         select {
           padding: 12px 15px;
           border-radius: 10px;
-          border: 1px solid #100f0fff;
+          border: 1px solid rgb(248, 245, 245);
           font-size: 16px;
           outline: none;
           transition: border 0.2s, box-shadow 0.2s;
         }
         input:focus,
         select:focus {
-          border-color: #131414ff;
+          border-color: rgb(253, 254, 254);
           box-shadow: 0 0 8px rgba(16, 17, 19, 0.4);
         }
         button {
-          background: #181819ff;
-          color: white;
+          background: rgb(247, 247, 252);
+          color: black;
           font-weight: bold;
           padding: 12px;
           border: none;
@@ -184,16 +186,16 @@ body {
           transition: background 0.2s, transform 0.2s;
         }
         button:hover {
-          background: #1d1d1fff;
+          background: rgb(245, 245, 251);
           transform: translateY(-2px);
         }
         .login-link {
           margin-top: 20px;
           font-size: 14px;
-          color: #101011ff;
+          color: rgb(253, 253, 254);
         }
         .login-link span {
-          color: #0a0a0bff;
+          color: rgb(247, 247, 252);
           font-weight: bold;
           cursor: pointer;
         }
@@ -205,7 +207,7 @@ body {
           font-size: 14px;
         }
         .about-link span {
-          color: #121213ff;
+          color: rgb(251, 251, 254);
           font-weight: bold;
           cursor: pointer;
         }
