@@ -491,8 +491,9 @@ html, body {
   height: calc(56px + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) 12px 0;
 
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
+  background: white;
+  color: black;
+  border-bottom: 1px solid #060606;
 
   align-items: center;
   justify-content: space-between;
@@ -510,15 +511,17 @@ html, body {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #1e293b;
+  background: white;
   border: none;
-  color: white;
+  color: black;
   font-size: 20px;
   cursor: pointer;
 }
 
 .appbar-btn.primary {
-  background: #3b82f6;
+  background: white;
+  border: 1px solid black;
+  
 }
 
 
@@ -529,7 +532,7 @@ html, body {
   gap: 10px;
   margin-bottom: 20px;
   padding: 10px;
-  border: 1px dashed #334155;
+  border: 1px solid #0c0c0c;
   border-radius: 12px;
 }
   .admin-editable {
@@ -543,7 +546,7 @@ html, body {
 .edit-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -562,8 +565,8 @@ html, body {
 }
 
 .delete-icon-btn {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: transparent;
+  border: 1px solid rgba(10, 10, 10, 0.2);
   padding: 8px;
   border-radius: 8px;
   cursor: pointer;
@@ -571,7 +574,7 @@ html, body {
 }
 
 .delete-icon-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(247, 5, 5, 0.2);
 }
 
 .group-text {
@@ -583,19 +586,19 @@ html, body {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: white;
+  color: black;
 }
 
 .group-stats {
   margin: 2px 0 0 0;
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: #070707;
 }
 
 .preview-circle {
   width: 64px;
   height: 64px;
-  background: #0f172a;
+  background: #f2f3f5;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -603,7 +606,7 @@ html, body {
   cursor: pointer;
   overflow: hidden;
   font-size: 24px;
-  color: #3b82f6;
+  color: #080808;
 }
 
 .preview-circle img {
@@ -614,18 +617,18 @@ html, body {
 
 .avatar-upload label {
   font-size: 12px;
-  color: #94a3b8;
+  color: #030303;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-        .container { background: #0f172a; margin-top:20px; min-height: 100vh; color: white; padding: 20px; font-family: sans-serif;  margin-bottom: 0px;
+        .container { background: white; margin-top:20px; min-height: 100vh; color: black; padding: 20px; font-family: sans-serif;  margin-bottom: 0px;
   margin-left: 0px;
   margin-right: 0px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .header-left { display: flex; align-items: center; gap: 12px; }
-        .back-btn { background: #1e293b; border: none; color: #94a3b8; padding: 8px; border-radius: 8px; cursor: pointer; }
-        .create-btn { background: #3b82f6; border: none; color: white; padding: 10px 16px; border-radius: 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .search-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: white; margin-bottom: 20px; overflow: hidden; text-overflow: ellipsis; }
+        .back-btn { background: #f1f3f7; border: none; color: #080808; padding: 8px; border-radius: 8px; cursor: pointer; }
+        .create-btn { background: #f7f8fb; border: 1px solid black; color: black; padding: 10px 16px; border-radius: 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .search-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid black; background: #f7f8f9; color: black; margin-bottom: 20px; overflow: hidden; text-overflow: ellipsis; margin-top: 5px; }
 
         .groups-grid { 
   display: grid; 
@@ -634,10 +637,12 @@ html, body {
   align-items: start; /* This prevents cards from stretching to match the tallest card */
 }
         .group-card { 
-  background: #1e293b; 
+  background: #f9fafb; 
+  color: black;
+  color: black;
   border-radius: 16px; 
   padding: 16px; /* Slightly reduced padding for a tighter look */
-  border: 1px solid #334155; 
+  border: 1px solid #0b0b0b; 
   height: fit-content; /* Force card to only be as tall as its content */
   display: flex;
   flex-direction: column;
@@ -647,9 +652,10 @@ html, body {
   display: flex; 
   align-items: center; 
   gap: 12px; 
+  color: black;
   /* Remove margin-bottom since the card has a gap now */
 }
-        .group-avatar { width: 44px; height: 44px; background: #334155; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #3b82f6; }
+        .group-avatar { width: 44px; height: 44px; background: #f5f7f9; border: 2px solid blue; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #101010; }
         
         .group-footer { 
   display: flex; 
@@ -657,19 +663,19 @@ html, body {
   align-items: center;
   margin-top: 4px; /* Small push from the info section */
 }
-        .cat-badge { background: rgba(59, 130, 246, 0.1); color: #60a5fa; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; }
+        .cat-badge { background: white; color: #0d0d0e; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; }
         
         .view-btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
-        .join-mode { background: #3b82f6; color: white; }
-        .chat-mode { background: #10b981; color: white; }
+        .join-mode { background: white; color: black; border: 1px solid black; }
+        .chat-mode { background: white; color: black; border: 1px solid black; }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
         .modal { background: #1e293b; width: 90%; max-width: 400px; padding: 25px; border-radius: 16px; border: 1px solid #334155; }
         .field { margin-bottom: 15px; }
         input, select { width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; border: 1px solid #334155; color: white; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .confirm-btn { flex: 2; background: #3b82f6; color: white; border: none; padding: 10px; border-radius: 8px; }
-        .cancel-btn { flex: 1; background: transparent; color: white; border: 1px solid #334155; padding: 10px; border-radius: 8px; }
+        .confirm-btn { flex: 2; background: #3b82f6; color: black; border: none; padding: 10px; border-radius: 8px; }
+        .cancel-btn { flex: 1; background: transparent; color: black; border: 1px solid #334155; padding: 10px; border-radius: 8px; }
 
         .loader { text-align: center; padding: 50px; }
         .spinner { border: 3px solid #334155; border-top: 3px solid #3b82f6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }

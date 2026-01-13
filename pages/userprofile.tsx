@@ -533,7 +533,8 @@ body {
   align-items: center;
   gap: 12px;
 
-  background: black;
+  background: white;
+  color: white;
   border-bottom: 1px solid #222;
 }
 
@@ -547,8 +548,9 @@ body {
 .loader-container {
   position: fixed;
   inset: 0;
-  background: #000; /* match your page background */
+  background: white; /* match your page background */
   display: flex;
+  color: white;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -564,7 +566,7 @@ body {
 /* Loading text */
 .loader-container p {
   font-size: 14px;
-  color: #e5e7eb;
+  color: black;
   letter-spacing: 0.3px;
 }
 
@@ -591,7 +593,7 @@ body {
   border: none;
   padding: 6px;
   cursor: pointer;
-  color: #9ca3af;
+  color: black;
   border-radius: 8px;
 }
 
@@ -609,7 +611,7 @@ body {
   gap: 16px;
   margin-top: 8px;
   font-size: 13px;
-  color: #cfcfcf;
+  color: #0c0c0c;
 }
 
 .stat {
@@ -637,7 +639,7 @@ body {
   gap: 16px;
   margin-top: 8px;
   font-size: 13px;
-  color: #bbb;
+  color: #070707;
 }
 
 .post-content {
@@ -657,7 +659,8 @@ body {
 .back-btn {
   background: transparent;
   border: none;
-  color: #ffffff;
+  position: sticky;
+  color: #070707;
   font-size: 26px;
   font-weight: 700;
   cursor: pointer;
@@ -668,7 +671,7 @@ body {
 }
 
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(254, 6, 6, 0.08);
 }
 
 .back-btn:active {
@@ -685,8 +688,8 @@ body {
   min-height: 100vh;
   padding: 10px 10px 10px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #f0ebebff;
-  background: black;
+  color: black;
+  background: white;
 }
   video,
 img {
@@ -721,7 +724,7 @@ img {
   gap: 24px;
   align-items: center;
   padding-bottom: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #0b0b0b;
 }
 
 /* ========== AVATAR ========== */
@@ -734,7 +737,8 @@ img {
   height: 110px;
   border-radius: 50%;
   object-fit: cover;
-  background: #f3f4f6;
+  background: #204389;
+  border: 2px solid rgb(19, 7, 247);
 }
 
 .profile-avatar.placeholder {
@@ -743,15 +747,15 @@ img {
   justify-content: center;
   font-size: 42px;
   font-weight: 600;
-  color: #f3ededff;
+  color: rgb(13, 13, 13);
 }
 
 .avatar-upload {
   position: absolute;
   bottom: 4px;
   right: 4px;
-  background: rgba(0, 0, 0, 0.75);
-  color: #fff;
+  background: white;
+  color: black;
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 999px;
@@ -774,7 +778,7 @@ img {
   font-weight: 600;
   padding: 6px 8px;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #111111;
   width: 100%;
   max-width: 280px;
 }
@@ -785,29 +789,29 @@ img {
   gap: 18px;
   margin: 12px 0 16px;
   font-size: 14px;
-  color: #fefbfbff;
+  color: rgb(7, 7, 7);
 }
 
 .profile-stats strong {
   font-weight: 700;
-  color: #f7f0f0ff;
+  color: rgb(12, 12, 12);
 }
 
 /* ========== BUTTONS ========== */
 button {
   border: none;
   cursor: pointer;
-  color: white;
+  color: black;
   padding: 8px 14px;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
-  background: #151515ff;
+  background: white;
   transition: background 0.2s ease, transform 0.1s ease;
 }
 
 button:hover {
-  background: #0f0f0fff;
+  background: rgb(250, 4, 4);
 }
 
 button:active {
@@ -815,12 +819,12 @@ button:active {
 }
 
 .primary-btn {
-  background: #050505ff;
-  color: #fefafaff;
+  background: rgb(252, 250, 250);
+  color: rgb(10, 10, 10);
 }
 
 .primary-btn:hover {
-  background: #000;
+  background: #fffdfd;
 }
 
 /* ========== CONTENT ========== */
@@ -836,10 +840,11 @@ button:active {
 
 /* ========== MINI CARDS ========== */
 .mini-card {
-  background: #0f0f0fff;
-  border: 1px solid #e5e7eb;
+  background: white;
+  border: 1px solid #0c0c0c;
   border-radius: 14px;
   padding: 14px;
+  color: black;
   margin-bottom: 12px;
   overflow: hidden;
 }
@@ -853,7 +858,7 @@ button:active {
 .mini-card p {
   margin: 0;
   font-size: 14px;
-  color: #f8f4f4ff;
+  color: rgb(5, 5, 5);
 }
 
 .mini-card img {
@@ -866,7 +871,7 @@ button:active {
 /* ========== EMPTY STATES ========== */
 .profile-content p {
   font-size: 14px;
-  color: #f3eeeeff;
+  color: rgb(2, 2, 2);
 }
 
 /* ========== RESPONSIVE ========== */

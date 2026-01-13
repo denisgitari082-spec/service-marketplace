@@ -1355,7 +1355,7 @@ useEffect(() => {
   gap: 10px;
   padding: 40px 0;
   font-size: 14px;
-  color: #999;
+  color: black;
 }
 
 .spinner {
@@ -1382,7 +1382,8 @@ useEffect(() => {
   position: absolute;
   right: 0;
   top: 28px;
-  background: #111;
+  background: white;
+  color: white;
   border-radius: 10px;
   padding: 6px;
   min-width: 160px;
@@ -1395,7 +1396,7 @@ useEffect(() => {
   padding: 10px;
   background: none;
   border: none;
-  color: #fff;
+  color: #0a0a0a;
   text-align: left;
   cursor: pointer;
   border-radius: 6px;
@@ -1422,7 +1423,7 @@ useEffect(() => {
   .empty-search {
   text-align: center;
   padding: 40px 20px;
-  color: #888;
+  color: #080808;
 }
 
 .empty-search p {
@@ -1461,9 +1462,10 @@ useEffect(() => {
   align-items: center;
   gap: 8px;
   width: 220px;
+  colot: black;
   padding: 6px 12px;
-  background: #020617;
-  border: 1px solid #334155;
+  background: white;
+  border: 1px solid black;
   border-radius: 999px;
 
   transform-origin: right center;
@@ -1486,8 +1488,9 @@ useEffect(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #020617;
-  border: 1px solid #334155;
+  color: black;
+  background: white;
+  border: 1px solid #0a0a0a;
   border-radius: 999px;
   padding: 6px 12px;
    max-width: calc(100vw - 80px);
@@ -1498,7 +1501,7 @@ useEffect(() => {
   flex: 1;
   background: transparent;
   border: none;
-  color: white;
+  color: black;
   outline: none;
   font-size: 14px;
 }
@@ -1506,18 +1509,18 @@ useEffect(() => {
 .close-search {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #070707;
   font-size: 20px;
   cursor: pointer;
 }
 
 
 .follow-btn {
-  color: #94a3b8;
+  color: black;
 }
 
 .follow-btn.following {
-  color: white;
+  color: black;
 }
 
 
@@ -1538,6 +1541,7 @@ useEffect(() => {
   border-radius: 50%;
   overflow: hidden;
   background: #222;
+  border: 2px solid #1403f9;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1550,7 +1554,7 @@ useEffect(() => {
 }
 
 .user-avatar-placeholder {
-  color: #fff;
+  color: #f5f7f6;
   font-weight: 600;
 }
 
@@ -1560,8 +1564,10 @@ useEffect(() => {
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
-  background: #222;
+  background: #f7f5f5;
   display: flex;
+  color: #0d0d0e;
+  border: 2px solid #0565ff;
   align-items: center;
   justify-content: center;
 }
@@ -1593,7 +1599,7 @@ useEffect(() => {
   gap: 12px;
   padding: 10px 4px;
   font-size: 14px;
-  color: #f1f5f9;
+  color: #060606;
 }
 .close-sheet-btn:hover {
   color: #f87171; /* subtle red hint */
@@ -1612,7 +1618,7 @@ useEffect(() => {
 .drag-handle {
   width: 36px;
   height: 4px;
-  background: #334155;
+  background: #f6f7f9;
   border-radius: 999px;
   margin-bottom: 10px;
 }
@@ -1804,7 +1810,7 @@ useEffect(() => {
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #060606;
   margin-bottom: 2px;
 }
 
@@ -1920,11 +1926,11 @@ reply-item { margin-left: 30px; margin-top: 8px; font-size: 0.85rem; color: #94a
 .like-count {
   font-size: 14px;
   font-weight: 600;
-  color: #f8fafc;
+  color: #0b0b0b;
 }
 
 .upload-section {
-  background: #0f172a;
+  background: #fafbfd;
   border-radius: 20px;
   padding: 20px;
   border: 1px solid #1e293b;
@@ -1964,7 +1970,7 @@ textarea {
   width: 100%;
   background: transparent;
   border: none;
-  color: white;
+  color: black;
   overflow: hidden;
    box-sizing: border-box;
   font-size: 1.1rem;
@@ -1988,8 +1994,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #1e293b;
-  color: #f8fafc;
+  background: #f8f9fa;
+  color: #040404;
   padding: 10px 16px;
   border-radius: 12px;
   font-weight: 600;
@@ -1999,7 +2005,8 @@ textarea {
 }
 
 .add-file-label:hover {
-  background: #334155;
+  background: #f4f6f7;
+  color: #000;
 }
 
 /* CANCEL & SHARE BUTTONS */
@@ -2012,7 +2019,7 @@ textarea {
 .cancel-text-btn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #080808;
   font-weight: 600;
   cursor: pointer;
   padding: 8px;
@@ -2020,7 +2027,7 @@ textarea {
 
 .share-btn {
   background: #3b82f6;
-  color: white;
+  color: black;
   border: none;
   padding: 10px 24px;
   border-radius: 12px;
@@ -2069,7 +2076,7 @@ textarea {
 .nav-btn {
   background: none;
   border: none;
-  color: #f1f5f9;
+  color: #080808;
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -2080,7 +2087,7 @@ textarea {
 }
 
 .nav-btn:hover {
-  background: #1e293b;
+  background: #f8f8f9;
 }
 
 .header-nav h2 {
@@ -2097,12 +2104,13 @@ textarea {
   margin-bottom: 50px;
   display: flex;
   flex-direction: column;
+    border-bottom: 1px solid #050505;
 }
 
 /* THE CARD: This expands/contracts based on children */
 .dynamic-meme-card {
-  background: #0f172a; 
-  border: 1px solid #334155;
+  background: white; 
+  border: 1px solid #060606;
   border-radius: 50px;
   overflow: hidden;
   width: 100%; /* Keeps the card aligned to the feed width */
@@ -2118,32 +2126,35 @@ textarea {
   display: block;
   max-height: 85vh; /* Stops it from being infinitely tall */
   object-fit: contain;
-  background: #000;
+  background: black;
 }
 
 /* TEXT MEME: Snug padding */
 .text-meme-content {
   padding: 24px; /* Card height is determined solely by text + this padding */
   text-align: left;
+  
 }
 
 .text-meme-content p {
   margin: 0;
   font-size: 1.1rem;
   line-height: 1.5;
-  color: #f8fafc;
+  color: black;
   word-wrap: break-word;
+  
+
 }
 
 /* CAPTION (Only for images/videos) */
 .caption {
   font-size: 0.9rem;
   margin-top: 8px;
-  color: #cbd5e1;
+  color: #080808;
 }
         /* This fills the whole screen background */
         body {
-          background-color: #000000 !important;
+          background-color: white !important;
           margin: 0;
           padding: 0;
         }
@@ -2163,22 +2174,26 @@ textarea {
   margin-bottom: 0px;
   margin-left: 0px;
   margin-right: 0px;
-  color: white;
+  color: black;
   padding-left: 5px;
   padding-right: 5px;
-  background-color: #000;
+  background-color: white;
   box-sizing: border-box;
+  border-bottom: 1px solid #050505;
+
 }
 .video-feed {
   max-width: 550px;
   margin: 0 auto;
+  border-bottom: 1px solid #050505;
+
 }
 html, body, #__next {
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #000;
+  background: white;
   overflow-x: hidden;
 }
 
@@ -2198,8 +2213,8 @@ html, body, #__next {
   justify-content: space-between;
   align-items: center;
 
-  background: #000;
-  border-bottom: 1px solid #1e293b;
+  background: white;
+  border-bottom: 1px solid #050505;
 }
 
         
@@ -2209,24 +2224,24 @@ html, body, #__next {
           display: flex;
           align-items: center;
           gap: 8px;
-          background: #0f172a;
-          border: 1px solid #334155;
-          color: #94a3b8;
+          background: white;
+          border: 1px solid #060606;
+          color: black;
           padding: 8px 16px;
           border-radius: 20px;
           cursor: pointer;
           transition: all 0.2s;
         }
 
-        .active-reel { background: #2563eb; color: white; border-color: #3b82f6; }
-        .active-meme { background: #7c3aed; color: white; border-color: #8b5cf6; }
+        .active-reel { background: #f4f4f6; color: black; border-color: #080808; }
+        .active-meme { background: #f9f8fb; color: black; border-color: #080808; }
 
 
         
         textarea { 
-          background: #000; 
+          background: white; 
           color: white; 
-          border: 1px solid #334155; 
+          border: 1px solid #0a0a0a; 
           padding: 12px; 
           border-radius: 8px; 
           resize: none; 
@@ -2254,8 +2269,8 @@ html, body, #__next {
           font-size: 14px;
         }
 
-        .user-name { font-weight: 600; font-size: 14px; color: #f8fafc; }
-        .more-btn { background: none; border: none; color: #64748b; cursor: pointer; font-size: 18px; }
+        .user-name { font-weight: 600; font-size: 14px; color: black; }
+        .more-btn { background: none; border: none; color: #070707; cursor: pointer; font-size: 18px; }
 
 
 
@@ -2263,6 +2278,7 @@ html, body, #__next {
         /* ACTIONS & CAPTION (OUTSIDE CARD) */
         .post-footer-outer {
           padding: 14px 0;
+          color: black;
         }
 
         .action-bar { 
@@ -2276,7 +2292,7 @@ html, body, #__next {
         .action-btn { 
           background: none; 
           border: none; 
-          color: #f8fafc; 
+          color: #060606; 
           cursor: pointer; 
           padding: 0; 
           display: flex;
@@ -2286,20 +2302,20 @@ html, body, #__next {
         
         .action-btn:active { transform: scale(0.9); }
 
-        .caption { font-size: 14px; color: #e2e8f0; line-height: 1.5; margin-top: 4px; }
-        .caption strong { color: white; margin-right: 8px; }
+        .caption { font-size: 14px; color: #050505; line-height: 1.5; margin-top: 4px; }
+        .caption strong { color: black; margin-right: 8px; }
 
         .timestamp { 
           font-size: 11px; 
-          color: #64748b; 
+          color: #0b0b0b; 
           margin-top: 8px; 
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
 
-        button.publish-btn { background: #3b82f6; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: bold; }
+        button.publish-btn { background: #fcfdfe; color: black; padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: bold; }
         button:disabled { opacity: 0.5; }
-        .cancel-btn { background: transparent; color: #94a3b8; border: none; cursor: pointer; }
+        .cancel-btn { background: transparent; color: #0e0e0e; border: none; cursor: pointer; }
       `}</style>
     </div>
   );
