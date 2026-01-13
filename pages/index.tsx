@@ -829,7 +829,7 @@ body {
 
 .comment-body p {
   margin: 4px 0 0;
-  color: #cbd5e1;
+  color: #0c0c0c;
 }
 
 /* INPUT AREA */
@@ -876,6 +876,7 @@ body {
 .comments-modal {
   max-width: 500px;
   width: 95%;
+  color: black;
 }
 
 .comments-list {
@@ -895,22 +896,23 @@ body {
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid rgb(59, 24, 196);
+  border: 2px solid rgb(58, 9, 253);
   background: #070707ff;
 }
 
 .comment-input {
   display: flex;
   gap: 8px;
+  color: green;
 }
 
 .comment-input input {
   flex: 1;
   padding: 10px;
   border-radius: 8px;
-  background: #0a0a0aff;
-  border: 1px solid #334155;
-  color: white;
+  background: rgb(254, 254, 254);
+  border: 1px solid #0a0a0a;
+  color: black  ;
 }
 
       .action-btn.liked {

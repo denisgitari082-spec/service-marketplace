@@ -1625,19 +1625,21 @@ useEffect(() => {
 
 .header-title {
   display: flex;
+  color: black;
   align-items: center;
   gap: 8px;
 }
 
 .header-title h3 {
   margin: 0;
+  color: black;
   font-size: 1rem;
   font-weight: 700;
 }
 
 .comment-total {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: #050606;
 }
 
 .close-sheet-btn {
@@ -1653,7 +1655,7 @@ useEffect(() => {
 }
 
 .close-sheet-btn:hover {
-  color: #f8fafc;
+  color: #fa1105;
 }
 
 .sheet-footer {
@@ -1666,11 +1668,11 @@ useEffect(() => {
 }
 
 .active-reply-bar {
-  background: #1e293b;
+  background: #fcfdfe;
   border-radius: 10px;
   padding: 6px 10px;
   font-size: 12px;
-  color: #cbd5f5;
+  color: #0a0a0a;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1686,6 +1688,7 @@ useEffect(() => {
 
 .comment-input-row {
   display: flex;
+  color: black;
   align-items: center;
   gap: 10px;
 }
@@ -1702,7 +1705,7 @@ useEffect(() => {
 }
 
 .comment-input-row input::placeholder {
-  color: #64748b;
+  color: #0b0b0b;
 }
 
 .send-comment-btn {
@@ -1736,6 +1739,7 @@ useEffect(() => {
 .comments-scroll-area {
   flex: 1;
   overflow-y: auto;
+  color: black;
   padding: 10px 5px;
   display: flex;
   flex-direction: column;
@@ -1745,6 +1749,7 @@ useEffect(() => {
 }
 .comments-scroll-area::-webkit-scrollbar {
   display: none;
+  
 }
 
 /* THREAD STRUCTURE */
@@ -1791,19 +1796,22 @@ useEffect(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  color: black;
   max-width: 85%;
 }
 
 .comment-bubble {
-  background: #1e293b;
+  background: #fafbfd;
   padding: 10px 14px;
+  color: black;
+  border: 1px solid #080808;
   border-radius: 18px;
   border-top-left-radius: 2px;
 }
 
 .reply-bubble {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #f2f4f8;
+  border: 1px solid #080808;
 }
 
 .author-name {
@@ -1818,7 +1826,7 @@ useEffect(() => {
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
-  color: #f1f5f9;
+  color: #0c0c0c;
   word-break: break-word;
 }
 
@@ -1831,13 +1839,13 @@ useEffect(() => {
 
 .comment-time {
   font-size: 11px;
-  color: #64748b;
+  color: #070707;
 }
 
 .reply-trigger {
-  background: none;
+  background: white;
   border: none;
-  color: #94a3b8;
+  color: #0f03f8;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -1845,7 +1853,8 @@ useEffect(() => {
 }
 
 .reply-trigger:hover {
-  color: #3b82f6;
+  color: #0d0d0d;
+  background-color: white;
 }
 
 /* EMPTY STATE */
@@ -1874,16 +1883,19 @@ useEffect(() => {
 .comment-sheet-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(253, 252, 252, 0.7);
   z-index: 1000;
+  color: black;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
 }
 
 .comment-sheet {
-  background: #0f172a;
+  background: #fcfdff;
   height: 60vh;
+  border: 2px solid #0c0c0c;
+  color: black;
   border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
@@ -1964,6 +1976,7 @@ reply-item { margin-left: 30px; margin-top: 8px; font-size: 0.85rem; color: #94a
 
 html, body {
   overflow-x: hidden;
+  color: black;
 }
 
 textarea {
@@ -2240,7 +2253,7 @@ html, body, #__next {
         
         textarea { 
           background: white; 
-          color: white; 
+          color: black; 
           border: 1px solid #0a0a0a; 
           padding: 12px; 
           border-radius: 8px; 
