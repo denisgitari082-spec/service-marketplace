@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "../src/lib/supabaseClient";
-
+import { useRouter } from "next/navigation";
 
 type VideoPost = {
   id: string;
@@ -57,8 +57,43 @@ const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
 
 
+const router = useRouter();
+const CameraIcon = () => ( 
+<svg 
+  xmlns="http://www.w3.org/2000/svg" 
+  width="20" 
+  height="20" 
+  viewBox="0 0 24 24" 
+  fill="none" 
+  stroke="currentColor" 
+  stroke-width="2" 
+  stroke-linecap="round" 
+  stroke-linejoin="round"
+>
+  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+   <circle className="live-dot" cx="6" cy="10" r="1.5" fill="#ff0000" stroke="none" />
+   <circle cx="12" cy="13" r="4"/>
+</svg>
+);
 
-
+const ReelsIcon = () => (
+<svg 
+  xmlns="http://www.w3.org/2000/svg" 
+  width="24" 
+  height="24" 
+  viewBox="0 0 24 24" 
+  fill="none" 
+  stroke="currentColor" 
+  strokeWidth="2" 
+  strokeLinecap="round" 
+  strokeLinejoin="round"
+>
+  <path d="m22 8-6 4 6 4V8Z" />
+  <rect width="14" height="12" x="2" y="6" rx="2" ry="2" />
+  <circle className="live-dot" cx="6" cy="10" r="1.5" fill="#ff0000" stroke="none" />
+  
+</svg>
+);
 
 // --- FETCH COMMENTS ---
 const fetchComments = async (postId: string) => {
@@ -472,7 +507,7 @@ const { data: postsData, error: postsError } = await supabase
   `)
   .order("created_at", { ascending: false });
 
-  console.log("RENDER post profile:", postsData);
+  
 
 
     if (postsError) throw postsError;
@@ -818,6 +853,20 @@ useEffect(() => {
         </svg>
         <span className="icon-label"></span>
       </button>
+      <button 
+  className="icon-btn live-btn" 
+  onClick={() => router.push("/live")}
+>
+  <ReelsIcon/>
+  <span className="nav-label"></span>
+</button>
+      <button 
+  className="icon-btn live-btn" 
+  onClick={() => router.push("/camera")}
+>
+  <CameraIcon/>
+  <span className="nav-label"></span>
+</button>
     </>
   )}
 </div>
@@ -1362,6 +1411,32 @@ useEffect(() => {
 
 
       <style jsx>{`
+
+      .live-dot {
+  animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Optional: Make the button hover feel more like a "Live" trigger */
+.live-btn:hover {
+  color: #ff0000;
+  background: rgba(255, 0, 0, 0.05);
+  border-radius: 50%;
+}
 
       .loading-feed {
   display: flex;
